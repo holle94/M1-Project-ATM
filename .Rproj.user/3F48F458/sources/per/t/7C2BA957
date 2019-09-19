@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1568893931497.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3998853550",
+    "id" : "7C2BA957",
+    "lastKnownWriteTime" : 1568888357,
+    "last_content_update" : 1568888357,
+    "path" : "//student.aau.dk/Users/lbni13/Documents/GitHub/M1-Project-ATM/data_management.R",
+    "project_path" : "data_management.R",
+    "properties" : {
+        "cursorPosition" : "0,0",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
