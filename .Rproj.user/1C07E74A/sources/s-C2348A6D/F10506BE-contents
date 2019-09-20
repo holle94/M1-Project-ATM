@@ -1,0 +1,36 @@
+
+
+
+# Features for the data ---------------------------------------------------
+
+
+load(file="generated_data/sATM.Rdata")
+
+
+
+
+
+
+# Holidays ----------------------------------------------------------------
+
+# Denmark
+# Ferie i Nordjylland (http://skoleferie-dk.dk/skoleferie-nordjylland/)
+Jul <- ifelse(((sATM$month=="December" & sATM$day>=21) | (sATM$month=="January" & sATM$day<=4)), TRUE,FALSE)
+
+
+
+
+
+# Distance to other ATMs --------------------------------------------------
+
+
+
+
+
+
+
+# Distance to turist destinations -----------------------------------------
+
+
+
+
