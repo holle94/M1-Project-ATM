@@ -10,26 +10,41 @@ load(file="generated_data/sATM.Rdata")
 
 
 
-
 # Holidays ----------------------------------------------------------------
 
 # Denmark
-# Germany
+# Ferie i Nordjylland (http://skoleferie-dk.dk/skoleferie-nordjylland/)
 
-
-
-
+Jul    <- ifelse(((sATM$month=="December" & 20<=sATM$day) | (sATM$month=="January" & sATM$day<=4)), TRUE,FALSE)
+Vinter <- ifelse((sATM$month=="February" & 11<=sATM$day & sATM$day<=26), TRUE,FALSE)
+Paaske <- ifelse((sATM$month=="April" & 8 <= sATM$day & sATM$day<=17), TRUE,FALSE)
+Sommer <- ifelse(((sATM$month=="June" & 23<=sATM$day) | (sATM$month=="July" & sATM$day>=1)| (sATM$month=="August" & sATM$day<=13)), TRUE,FALSE)
+Efter  <- ifelse((sATM$month=="October" & 14<=sATM$day & sATM$day<=22), TRUE,FALSE)
+sATM$holliday <- Jul | Vinter | Paaske | Sommer | Efter
 
 # Distance to other ATMs --------------------------------------------------
+library(geosphere)
+library(tidyverse)
 
+mat <- as.matrix(data.frame(lon = sATM$atm_lon, 
+                            lat = sATM$atm_lat))
 
+Aal.luft <- c(9.842829962 , 57.088999644)
+Bil.luft <- c(9.150999396 , 55.73749705)
+Køb.luft <- c(12.650462   , 55.620750)
 
+#Afstand er i meter og i luftlinje:
+sATM$Aal.luft <- distHaversine(mat, Aal.luft, r=6378137)
+sATM$Bil.luft <- distHaversine(mat, Bil.luft, r=6378137)
+sATM$Køb.luft <- distHaversine(mat, Køb.luft, r=6378137)
 
-
-
+#Nærmeste lufthavn i km:
+sATM <- sATM %>% mutate(min.afstand=round(pmin(sATM$Aal.luft,sATM$Bil.luft,sATM$Køb.luft)/1000,2))
 
 # Distance to turist destinations -----------------------------------------
 
 
 
+
+save(sATM, file="generated_data/fATM.Rdata")
 
