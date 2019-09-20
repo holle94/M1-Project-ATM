@@ -1,7 +1,0 @@
-"0","paste0(""The training set has "", dim(training)[1], 
-       "" And the test set has "", dim(test)[1], "" observations"")
-"
-"1","[1]"
-"1"," ""The training set has 75001 And the test set has 24999 observations"""
-"1","
-"

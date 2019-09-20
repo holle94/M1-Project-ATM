@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1568974163520.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "E9742189",
+    "lastKnownWriteTime" : 15481518859288668,
+    "last_content_update" : 1568974163520,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "63457B07",
+        "caption" : "sATM",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=sATM&cache_key=63457B07",
+        "displayedObservations" : 10000,
+        "environment" : "",
+        "object" : "sATM",
+        "preview" : 0,
+        "totalObservations" : 10000,
+        "variables" : 34
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

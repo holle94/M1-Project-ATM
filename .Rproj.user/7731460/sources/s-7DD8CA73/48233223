@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1568973855676.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "48233223",
+    "lastKnownWriteTime" : 1568973053,
+    "last_content_update" : 1568973053,
+    "path" : "//student.aau.dk/Users/sthom15/Desktop/GitHub/M1-Project-ATM/plots_lars.Rmd",
+    "project_path" : "plots_lars.Rmd",
+    "properties" : {
+        "cursorPosition" : "24,0",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

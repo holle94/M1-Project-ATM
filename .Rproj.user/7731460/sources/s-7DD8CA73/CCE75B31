@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1568973363474.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "CCE75B31",
+    "lastKnownWriteTime" : 1568980240,
+    "last_content_update" : 1568980274967,
+    "path" : "//student.aau.dk/Users/sthom15/Desktop/GitHub/M1-Project-ATM/plots_simon.Rmd",
+    "project_path" : "plots_simon.Rmd",
+    "properties" : {
+        "cursorPosition" : "41,0",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

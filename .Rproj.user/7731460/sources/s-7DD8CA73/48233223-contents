@@ -1,0 +1,185 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(ggforce)
+library(caret)
+library(yardstick)
+library(knitr)
+library(ggthemes)
+library(ggridges)
+library(kableExtra)
+library(VIM)
+
+load(file="generated_data/sATM.Rdata")
+```
+
+
+
+
+```{r}
+
+sATM %>% group_by(weekday) %>% summarize(n=n()) %>% ggplot(aes(weekday,n)) + geom_col()
+sATM %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col()
+sATM %>% group_by(day) %>% summarize(n=n()) %>% ggplot(aes(day,n)) + geom_col()
+sATM %>% group_by(hour) %>% summarize(n=n()) %>% ggplot(aes(hour,n)) + geom_col()
+sATM %>% filter(currency =="EUR") %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col()
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+sATM <- sample_n(data, 10000, replace=F)
+sATM <- data
+
+sATM$euro <- ifelse(sATM$currency == "EUR", TRUE, FALSE)
+sATM$euro <- as.factor(sATM$euro)
+
+
+ml <- sATM %>% 
+  select(euro, month, day, weekday, hour, atm_location, card_type, weather_main) %>% 
+  mutate(card_type = as.factor(card_type),
+         atm_location = as.factor(atm_location))
+
+
+index    <- createDataPartition(ml$euro, p = 0.15, list = FALSE)
+training <- ml[index,] 
+test     <- ml[-index,] 
+
+paste0("The training set has ", dim(training)[1], 
+       " And the test set has ", dim(test)[1], " observations")
+```
+
+
+
+
+```{r}
+
+cv <- trainControl(method = "cv", number = 5)
+
+fit_raf <- train(euro ~ ., 
+                 data      = training,
+                 trControl = cv,
+                 tuneGrid  = expand.grid(.mtry = (4)),
+                 method    = 'rf',
+                 metric    = 'Accuracy')
+```
+
+
+
+```{r}
+#library(doParallel)
+#cl <- makePSOCKcluster(5)
+#registerDoParallel(cl)
+
+
+
+a <- Sys.time
+fit_log <- train(euro ~ .,
+                 data      = training,
+                 trControl = cv, 
+                 tuneGrid  = expand.grid(alpha  = 0.5, 
+                                         lambda = 0),
+                 method    = "glmnet", 
+                 family    = "binomial",
+                 metric    = 'Accuracy')
+
+Sys.time() - a
+
+#stopCluster(cl)
+```
+
+
+
+```{r}
+#pred_raf <- predict(fit_raf,  test)
+#conf_raf <- table(pred_raf, test$euro)
+#conf_raf
+
+
+pred_log <- predict(fit_log,  test)
+conf_log <- table(pred_log, test$euro)
+conf_log
+
+
+random <- rbinom(n    = length(test$euro), size = 1, 
+                 prob = mean(as.logical(training$euro)))
+conf_ran <- table(as.factor(if_else(random==1, "TRUE", "FALSE")), test$euro)
+conf_ran
+```
+
+
+
+
+
+
+
+
+
+```{r}
+
+#raf <- rbind(spec(conf_raf), precision(conf_raf), accuracy(conf_raf))
+log <- rbind(spec(conf_log), precision(conf_log), accuracy(conf_log), recall(conf_log), npv(conf_log))
+ran <- rbind(spec(conf_ran), precision(conf_ran), accuracy(conf_ran), recall(conf_ran), npv(conf_ran))
+
+#raf$model <- "Random Forrest"
+log$model <- "Logistic Regression"
+ran$model <- "Random Assignment"
+
+df <- rbind(log, ran)
+
+ggplot(df, aes(.metric, .estimate, fill = reorder(model, desc(.estimate)))) + 
+  geom_col(position="dodge", width = 0.6) + 
+  scale_fill_tableau(palette = "Miller Stone", type = "regular") + 
+  labs(title="Model performance on predicting Legendary status", 
+       subtitle="Crossvalidated 1/5 split", fill="Predictive Model")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
