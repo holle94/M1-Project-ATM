@@ -27,7 +27,9 @@ data$date <- ymd(paste0(data$year, "-", data$month, "-", data$day))
 # Save sample -------------------------------------------------------------
 
 sATM <- sample_n(data, size=10000, replace = F)
+bATM <- sample_n(data, size=250000, replace = F)
+
 
 save(sATM, file = "generated_data/sATM.Rdata")
-
+save(bATM, file = "generated_data/bATM.Rdata")
 
