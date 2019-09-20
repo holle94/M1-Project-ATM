@@ -12,7 +12,7 @@ library(knitr)
 library(ggthemes)
 library(ggridges)
 library(kableExtra)
-
+library(VIM)
 
 load(file="generated_data/sATM.Rdata")
 ```
@@ -29,13 +29,23 @@ sATM %>% group_by(hour) %>% summarize(n=n()) %>% ggplot(aes(hour,n)) + geom_col(
 sATM %>% filter(currency =="EUR") %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col()
 
 ```
+
+
+
+
+
+
+
+
+
+
 ```{r}
 
-sATM <- sample_n(data, 100000, replace=F)
+sATM <- sample_n(data, 10000, replace=F)
+sATM <- data
 
 sATM$euro <- ifelse(sATM$currency == "EUR", TRUE, FALSE)
 sATM$euro <- as.factor(sATM$euro)
-
 
 
 ml <- sATM %>% 
@@ -44,9 +54,7 @@ ml <- sATM %>%
          atm_location = as.factor(atm_location))
 
 
-
-
-index    <- createDataPartition(ml$euro, p = 0.75, list = FALSE)
+index    <- createDataPartition(ml$euro, p = 0.15, list = FALSE)
 training <- ml[index,] 
 test     <- ml[-index,] 
 
@@ -67,9 +75,18 @@ fit_raf <- train(euro ~ .,
                  tuneGrid  = expand.grid(.mtry = (4)),
                  method    = 'rf',
                  metric    = 'Accuracy')
+```
 
 
 
+```{r}
+#library(doParallel)
+#cl <- makePSOCKcluster(5)
+#registerDoParallel(cl)
+
+
+
+a <- Sys.time
 fit_log <- train(euro ~ .,
                  data      = training,
                  trControl = cv, 
@@ -79,6 +96,9 @@ fit_log <- train(euro ~ .,
                  family    = "binomial",
                  metric    = 'Accuracy')
 
+Sys.time() - a
+
+#stopCluster(cl)
 ```
 
 
