@@ -30,7 +30,8 @@ library(ggmap)
 library(osmdata)
 library(sf)
 
-load(file="generated_data/fATM.Rdata")
+load(file="generated_data/bATM.Rdata")
+load(file="generated_data/fbATM.Rdata")
 
 set.seed(20092019)
 ```
@@ -85,15 +86,15 @@ grid.arrange(s1,s2,s3,s4, nrow=1)
 
 
 ```{r fig.height=6, fig.width=10}
-s5 <- fATM %>% filter(currency =="EUR") %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col()
+s5 <- bATM %>% filter(Euro == T) %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col()
 
 grid.arrange(s5)
 
-fATM %>% 
-  group_by(atm_id) %>% 
-  summarize(n=n(), area = first(weather_city_name)) %>% 
-  ggplot(aes(reorder(atm_id,n), n, fill=as.factor(area))) + 
-  geom_col()
+#fATM %>% 
+#  group_by(atm_id) %>% 
+#  summarize(n=n(), area = first(weather_city_name)) %>% 
+#  ggplot(aes(reorder(atm_id,n), n, fill=as.factor(area))) + 
+#  geom_col()
 ```
 
 
@@ -123,7 +124,7 @@ paste0("Proportion of EURO transactions during vacations ", round(tab[2,2] / sum
 summary(tab)
 
 
-table(fATM$euro, fATM$atm_id) %>% 
+table(fbATM$Euro, fbATM$Id) %>% 
   prop.table(margin=2) %>% 
   as.data.frame %>% 
   filter(Var1==T) %>% 
@@ -154,6 +155,61 @@ table(fATM$euro, fATM$atm_id) %>%
 
 ## Supervised Models
 
+```{r}
+cv <- trainControl(method = "cv", number = 5)
+
+
+ml <- fbATM
+
+
+index    <- createDataPartition(ml$Euro, p = 0.25, list = FALSE)
+training <- ml[index,] 
+test     <- ml[-index,] 
+```
+
+```{r}
+a <- Sys.time()
+fit_log <- train(Euro ~ .,
+                 data      = training,
+                 trControl = cv, 
+                 method    = "glm", 
+                 family    = "binomial",
+                 metric    = 'Accuracy')
+Sys.time() - a
+
+conf_log <- table(predict(fit_log,  test), test$Euro)
+conf_log
+
+
+conf_log <- table(predict(fit_log,  test), test$Id)
+conf_log
+```
+
+
+
+
+
+```{r}
+
+#conf_raf <- table(predict(fit_raf,  test), test$euro)
+#conf_raf
+
+conf_log <- table(predict(fit_log,  test), test$Euro)
+conf_log
+#
+#conf_lok <- table(predict(fit_lok,  test), test$euro)
+#conf_lok
+#
+#conf_net <- table(predict(fit_net,  test), test$euro)
+#conf_net
+#
+#conf_svm <- table(predict(fit_svm,  test), test$euro)
+#conf_svm
+
+random   <- rbinom(n = length(test$Euro), size = 1, prob = mean(as.logical(training$Euro)))
+conf_ran <- table(as.factor(if_else(random == 1, "TRUE", "FALSE")), test$Euro)
+conf_ran
+```
 
 
 
@@ -161,14 +217,33 @@ table(fATM$euro, fATM$atm_id) %>%
 
 
 
+```{r}
+#raf <- rbind(spec(conf_raf), precision(conf_raf), accuracy(conf_raf))
+#net <- rbind(spec(conf_net), precision(conf_net), accuracy(conf_net), recall(conf_net), npv(conf_net))
+#raf <- rbind(spec(conf_raf), precision(conf_raf), accuracy(conf_raf), recall(conf_raf), npv(conf_raf))
+log <- rbind(spec(conf_log), precision(conf_log), accuracy(conf_log), recall(conf_log), npv(conf_log))
+#lok <- rbind(spec(conf_lok), precision(conf_lok), accuracy(conf_lok), recall(conf_lok), npv(conf_lok))
+ran <- rbind(spec(conf_ran), precision(conf_ran), accuracy(conf_ran), recall(conf_ran), npv(conf_ran))
+#svm <- rbind(spec(conf_svm), precision(conf_svm), accuracy(conf_svm), recall(conf_svm), npv(conf_svm))
 
+#raf$model <- "Random Forrest"
+#net$model <- "Elastic Net Regression"
+#raf$model <- "Random Forrest"
+log$model <- "Logistic Regression - glm"
+#lok$model <- "Logistic Regression - glmnet"
+ran$model <- "Random Assignment"
+#svm$model <- "Support Vector Machine Model"
 
+#df <- rbind(log, lok, ran, net, raf, svm)
 
+df <- rbind(ran, log)
 
-
-
-
-
+ggplot(df, aes(.metric, .estimate, fill = reorder(model, desc(.estimate)))) + 
+  geom_col(position="dodge", width = 0.6) + 
+  scale_fill_tableau(palette = "Miller Stone", type = "regular") + 
+  labs(title="Model performance on predicting Legendary status", 
+       subtitle="Crossvalidated 1/5 split", fill="Predictive Model")
+```
 
 
 

@@ -1,0 +1,5 @@
+"0","cv <- trainControl(method = ""cv"", number = 5)"
+"0","ml <- fbATM"
+"0","index    <- createDataPartition(ml$Euro, p = 0.25, list = FALSE)"
+"0","training <- ml[index,] "
+"0","test     <- ml[-index,] "

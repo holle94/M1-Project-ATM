@@ -1,0 +1,251 @@
+---
+title: "Models"
+output: html_document
+---
+
+
+```{r}
+library(tidyverse)
+library(ggforce)
+library(caret)
+library(yardstick)
+library(knitr)
+library(ggthemes)
+library(ggridges)
+library(kableExtra)
+library(VIM)
+
+load(file="generated_data/fATM.Rdata")
+set.seed(20092019)
+```
+
+
+
+```{r}
+# Evaluation of feature engeneering
+
+fATM %>% 
+  group_by(euro) %>% 
+  summarize(MeanDistance = mean(airportdist))
+
+
+tab <- table(fATM$holliday, fATM$euro)
+tab
+paste0("Proportion of non-EURO transactions during vacations ", round(tab[2,1] / sum(tab[,1]),2),"%")
+paste0("Proportion of EURO transactions during vacations ", round(tab[2,2] / sum(tab[,2]),2),"%")
+summary(tab)
+
+
+table(fATM$euro, fATM$atm_id) %>% 
+  prop.table(margin=2) %>% 
+  as.data.frame %>% 
+  filter(Var1==T) %>% 
+  ggplot(aes(reorder(Var2, Freq), Freq)) + 
+  geom_col() + 
+  labs(x="ATM id", legend="Euro", title="Percentage of EURO transactions by each ATM machine", 
+       subtitle="")
+
+
+
+```
+
+
+
+
+
+```{r}
+#sATM <- sample_n(data, 10000, replace=F)
+#sATM <- data
+
+cv <- trainControl(method = "cv", number = 5)
+
+sATM$euro <- ifelse(sATM$currency == "EUR", TRUE, FALSE)
+sATM$euro <- as.factor(sATM$euro)
+
+
+ml <- sATM %>% 
+  select(euro, month, day, weekday, hour, atm_id, card_type, weather_main, atm_zipcode, airportdist, holliday) %>% 
+  mutate(card_type    = as.factor(card_type),
+         atm_location = as.factor(atm_id),
+         weather_main = as.factor(weather_main),
+         month        = as.factor(month),
+         weekday      = as.factor(weekday),
+         day          = as.factor(day),
+         hour         = as.factor(hour))
+
+
+index    <- createDataPartition(ml$euro, p = 0.25, list = FALSE)
+training <- ml[index,] 
+test     <- ml[-index,] 
+```
+
+
+```{r}
+fATM$euro <- ifelse(fATM$currency == "EUR", TRUE, FALSE)
+fATM$euro <- as.factor(fATM$euro)
+
+a <- fATM %>% select(euro, month, weekday, card_type, airportdist, holliday)
+b <- dummyVars(" ~ .", data=a, fullRank=T)
+lm_dummy <- predict(b, newdata = fATM)
+
+
+
+ml <- lm_dummy
+index    <- createDataPartition(ml[,1], p = 0.05, list = FALSE)
+training <- ml[index,]
+test     <- ml[-index,] 
+```
+
+
+
+
+
+```{r}
+fit_log <- train(as.factor(euro.TRUE) ~ .,
+                 data      = training,
+                 trControl = cv, 
+                 method    = "glm", 
+                 family    = "binomial",
+                 metric    = 'Accuracy')
+
+conf_log <- table(predict(fit_log,  test), test[,1])
+conf_log
+```
+
+
+
+
+
+
+```{r}
+a <- Sys.time()
+fit_raf <- train(euro ~ ., 
+                 data      = training,
+                 trControl = cv,
+                 tuneGrid  = expand.grid(.mtry = (4)),
+                 method    = 'rf',
+                 metric    = 'Accuracy')
+Sys.time() - a
+```
+
+
+```{r}
+a <- Sys.time()
+fit_log <- train(euro ~ .,
+                 data      = training,
+                 trControl = cv, 
+                 method    = "glm", 
+                 family    = "binomial",
+                 metric    = 'Accuracy')
+
+fit_lok <- train(euro ~ .,
+                 data      = training,
+                 trControl = cv, 
+                 tuneGrid  = expand.grid(alpha  = 0.5, 
+                                         lambda = 0),
+                 method    = "glmnet", 
+                 family    = "binomial",
+                 metric    = 'Accuracy')
+Sys.time() - a
+```
+
+
+```{r}
+a <- Sys.time()
+fit_net <- train(euro ~ .,
+                 data      = training,
+                 trControl = cv, 
+                 tuneGrid  = expand.grid(alpha  = 0.5, 
+                                         lambda = 0.0001),
+                 method    = "glmnet", 
+                 family    = "binomial",
+                 metric    = 'Accuracy')
+Sys.time() - a
+```
+
+
+```{r}
+a <- Sys.time()
+fit_svm <- train(euro ~ .,
+                 data      = training,
+                 trControl = cv,
+                 tuneGrid  = expand.grid(C = 1),
+                 method    = 'svmLinear',
+                 metric    = 'Accuracy')
+Sys.time() - a
+```
+
+
+
+
+
+
+```{r}
+
+conf_raf <- table(predict(fit_raf,  test), test$euro)
+conf_raf
+
+conf_log <- table(predict(fit_log,  test), test$euro)
+conf_log
+
+conf_lok <- table(predict(fit_lok,  test), test$euro)
+conf_lok
+
+conf_net <- table(predict(fit_net,  test), test$euro)
+conf_net
+
+conf_svm <- table(predict(fit_svm,  test), test$euro)
+conf_svm
+
+random   <- rbinom(n = length(test$euro), size = 1, prob = mean(as.logical(training$euro)))
+conf_ran <- table(as.factor(if_else(random == 1, "TRUE", "FALSE")), test$euro)
+conf_ran
+```
+
+
+
+
+
+
+```{r}
+#raf <- rbind(spec(conf_raf), precision(conf_raf), accuracy(conf_raf))
+net <- rbind(spec(conf_net), precision(conf_net), accuracy(conf_net), recall(conf_net), npv(conf_net))
+raf <- rbind(spec(conf_raf), precision(conf_raf), accuracy(conf_raf), recall(conf_raf), npv(conf_raf))
+log <- rbind(spec(conf_log), precision(conf_log), accuracy(conf_log), recall(conf_log), npv(conf_log))
+lok <- rbind(spec(conf_lok), precision(conf_lok), accuracy(conf_lok), recall(conf_lok), npv(conf_lok))
+ran <- rbind(spec(conf_ran), precision(conf_ran), accuracy(conf_ran), recall(conf_ran), npv(conf_ran))
+svm <- rbind(spec(conf_svm), precision(conf_svm), accuracy(conf_svm), recall(conf_svm), npv(conf_svm))
+
+#raf$model <- "Random Forrest"
+net$model <- "Elastic Net Regression"
+raf$model <- "Random Forrest"
+log$model <- "Logistic Regression - glm"
+lok$model <- "Logistic Regression - glmnet"
+ran$model <- "Random Assignment"
+svm$model <- "Support Vector Machine Model"
+
+df <- rbind(log, lok, ran, net, raf, svm)
+
+df <- rbind(lok, ran, log)
+
+ggplot(df, aes(.metric, .estimate, fill = reorder(model, desc(.estimate)))) + 
+  geom_col(position="dodge", width = 0.6) + 
+  scale_fill_tableau(palette = "Miller Stone", type = "regular") + 
+  labs(title="Model performance on predicting Legendary status", 
+       subtitle="Crossvalidated 1/5 split", fill="Predictive Model")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

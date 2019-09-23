@@ -1,0 +1,12 @@
+"0","coord <- as.matrix(data.frame(min = c(8, 55), "
+"0","                              max = c(13, 58), "
+"0","                              row.names = c(""x"",""y"")))"
+"0","s <- fATM %>% filter(atm_lat > coord[2,1] & atm_lat < coord[2,2] & "
+"0","                     atm_lon < coord[1,2] & atm_lon > coord[1,1]) %>% "
+"0","  group_by(atm_id) %>% "
+"0","  summarize(n   = n(),"
+"0","            lat = first(atm_lat),"
+"0","            lon = first(atm_lon),"
+"0","            man = first(atm_manufacturer))"
+"2","Error in eval(lhs, parent, parent) : object 'fATM' not found
+"
