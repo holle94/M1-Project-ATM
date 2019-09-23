@@ -16,7 +16,10 @@ sATM$Weekday <- ifelse(sATM$weekday == "Monday" | sATM$weekday == "Tuesday" | sA
 sATM$Weekend <- ifelse(sATM$weekday == "Saturday" | sATM$weekday == "Sunday", TRUE, FALSE)
 
 #Valuta
-sATM$Euro <- as.factor(ifelse(sATM$currency=="DKK",FALSE,TRUE))
+sATM$Euro <- as.factor(ifelse(sATM$currency=="DKK", FALSE, TRUE))
+
+#Payout
+sATM$Payout <- ifelse((sATM$day <=4 | sATM$day >=27), TRUE, FALSE)
 
 #Customer
 sATM$Customer <- str_detect(sATM$card_type, pattern = "on-us")
@@ -24,3 +27,9 @@ sATM$Customer <- str_detect(sATM$card_type, pattern = "on-us")
 #Cardtype
 sATM$Card <- sapply(strsplit(sATM$card_type, split=' - on-us', fixed=TRUE), function(x) (x[1]))
 sATM$Card <- as.factor(sATM$Card)
+
+#Region
+
+
+#Final dataset
+fATM <- sATM %>% select(holliday,min.afstand,Morning,Midday,Evening,Night,Euro,Customer,Card,Weekday,Weekend,Payout,Region)
