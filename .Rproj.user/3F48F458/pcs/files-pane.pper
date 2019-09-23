@@ -2,6 +2,10 @@
     "path" : "//student.aau.dk/Users/lbni13/Documents/GitHub/M1-Project-ATM",
     "sortOrder" : [
         {
+            "ascending" : false,
+            "columnIndex" : 1
+        },
+        {
             "ascending" : true,
             "columnIndex" : 2
         }

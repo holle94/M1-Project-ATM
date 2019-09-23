@@ -1,0 +1,1 @@
+{"frames":[{"character_number":0,"end_character_number":0,"end_line_number":0,"file":"","func":"createDataPartition(ml$euro.TRUE, p = 0.05, list = FALSE)","line_number":0}],"message":"Error in ml$euro.TRUE : $ operator is invalid for atomic vectors\n"}

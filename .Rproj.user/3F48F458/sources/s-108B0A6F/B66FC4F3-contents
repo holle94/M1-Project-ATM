@@ -1,0 +1,41 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(ggforce)
+library(caret)
+library(yardstick)
+library(knitr)
+library(ggthemes)
+library(ggridges)
+library(kableExtra)
+library(VIM)
+
+load(file="generated_data/sATM.Rdata")
+```
+
+
+
+```{r}
+
+sATM %>% group_by(weekday) %>% summarize(n=n()) %>% ggplot(aes(weekday,n)) + geom_col()
+sATM %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col()
+sATM %>% group_by(day) %>% summarize(n=n()) %>% ggplot(aes(day,n)) + geom_col()
+sATM %>% group_by(hour) %>% summarize(n=n()) %>% ggplot(aes(hour,n)) + geom_col()
+sATM %>% filter(currency =="EUR") %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col()
+
+```
+
+
+
+
+
+
+
+
+
+
+

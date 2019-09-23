@@ -1,0 +1,107 @@
+"0","library(tidyverse)"
+"0","library(ggforce)"
+"0","library(caret)"
+"2","Indlæser krævet pakke: lattice
+"
+"2","Registered S3 method overwritten by 'data.table':
+  method           from
+  print.data.table     
+"
+"2","
+Vedhæfter pakke: ‘caret’
+
+"
+"2","Det følgende objekt er maskeret fra ‘package:purrr’:
+
+    lift
+
+"
+"0","library(yardstick)"
+"2","For binary classification, the first factor level is assumed to be the event.
+Set the global option `yardstick.event_first` to `FALSE` to change this.
+
+"
+"2","
+Vedhæfter pakke: ‘yardstick’
+
+"
+"2","De følgende objekter er maskerede fra ‘package:caret’:
+
+    precision, recall
+
+"
+"2","Det følgende objekt er maskeret fra ‘package:readr’:
+
+    spec
+
+"
+"0","library(knitr)"
+"0","library(ggthemes)"
+"0","library(ggridges)"
+"2","
+Vedhæfter pakke: ‘ggridges’
+
+"
+"2","Det følgende objekt er maskeret fra ‘package:ggplot2’:
+
+    scale_discrete_manual
+
+"
+"0","library(kableExtra)"
+"2","Registered S3 methods overwritten by 'htmltools':
+  method               from         
+  print.html           tools:rstudio
+  print.shiny.tag      tools:rstudio
+  print.shiny.tag.list tools:rstudio
+"
+"2","
+Vedhæfter pakke: ‘kableExtra’
+
+"
+"2","Det følgende objekt er maskeret fra ‘package:dplyr’:
+
+    group_rows
+
+"
+"0","library(VIM)"
+"2","Indlæser krævet pakke: colorspace
+"
+"2","Indlæser krævet pakke: grid
+"
+"2","Indlæser krævet pakke: data.table
+"
+"2","data.table 1.12.2 using 6 threads (see ?getDTthreads).  Latest news: r-datatable.com
+"
+"2","
+Vedhæfter pakke: ‘data.table’
+
+"
+"2","De følgende objekter er maskerede fra ‘package:dplyr’:
+
+    between, first, last
+
+"
+"2","Det følgende objekt er maskeret fra ‘package:purrr’:
+
+    transpose
+
+"
+"2","VIM is ready to use. 
+ Since version 4.0.0 the GUI is in its own package VIMGUI.
+
+          Please use the package to use the new (and old) GUI.
+
+"
+"2","Suggestions and bug-reports can be submitted at: https://github.com/alexkowa/VIM/issues
+"
+"2","
+Vedhæfter pakke: ‘VIM’
+
+"
+"2","Det følgende objekt er maskeret fra ‘package:datasets’:
+
+    sleep
+
+"
+"0","load(file=""generated_data/sATM.Rdata"")"
+"0","set.seed(20092019)"
