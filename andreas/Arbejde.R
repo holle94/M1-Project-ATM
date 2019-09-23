@@ -29,7 +29,22 @@ sATM$Card <- sapply(strsplit(sATM$card_type, split=' - on-us', fixed=TRUE), func
 sATM$Card <- as.factor(sATM$Card)
 
 #Region
+library(sf)
 
+loc <- sATM %>% group_by(atm_id) %>% 
+  summarize(x=first(atm_lon), y=first(atm_lat))
+
+reg <- NA
+for (i in 1:nrow(loc)) {
+  aa <- read_csv(paste0("http://dawa.aws.dk/kommuner/reverse?x=",loc$x[i] ,"&y=",loc$y[i]))
+  reg[i] <- as.character(aa[10,])
+}
+
+loc$Region <- reg
+
+sATM <- merge(sATM,loc[,c(1,4)],by ="atm_id")
+sATM$Region <- sapply(strsplit(sATM$Region, split='": "', fixed=TRUE), function(x) (x[2]))
+sATM$Region <- as.factor(sATM$Region)
 
 #Final dataset
 fATM <- sATM %>% select(holliday,min.afstand,Morning,Midday,Evening,Night,Euro,Customer,Card,Weekday,Weekend,Payout,Region)

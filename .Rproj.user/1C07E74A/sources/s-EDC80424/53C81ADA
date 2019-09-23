@@ -12,15 +12,15 @@
     "path" : null,
     "project_path" : null,
     "properties" : {
-        "cacheKey" : "B7093057",
+        "cacheKey" : "17D2A9DC",
         "caption" : "sATM",
-        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=sATM&cache_key=B7093057",
-        "displayedObservations" : 10000,
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=sATM&cache_key=17D2A9DC",
+        "displayedObservations" : "10000",
         "environment" : "",
         "object" : "sATM",
-        "preview" : 0,
-        "totalObservations" : 10000,
-        "variables" : 38
+        "preview" : "0",
+        "totalObservations" : "10000",
+        "variables" : "51"
     },
     "relative_order" : 3,
     "source_on_save" : false,
