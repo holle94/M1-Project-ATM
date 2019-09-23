@@ -40,13 +40,12 @@ sATM <- sATM %>%
 
 
 #Divid clock
-sATM$Morning <- ifelse((sATM$hour>=4 & sATM$hour<=9), TRUE, FALSE)
-sATM$Midday  <- ifelse((sATM$hour>=10 & sATM$hour<=15), TRUE, FALSE)
-sATM$Evening <- ifelse((sATM$hour>=16 & sATM$hour<=21), TRUE, FALSE)
-sATM$Night   <- ifelse((sATM$hour>=22 | sATM$hour<=3), TRUE, FALSE)
+sATM$Time <- ifelse((sATM$hour>=4 & sATM$hour<=9),   "Morning", NA)
+sATM$Time <- ifelse((sATM$hour>=10 & sATM$hour<=15), "Midday", sATM$Time)
+sATM$Time <- ifelse((sATM$hour>=16 & sATM$hour<=21), "Evening", sATM$Time)
+sATM$Time <- ifelse((sATM$hour>=22 | sATM$hour<=3),  "Night", sATM$Time)
 
 #Divid the days
-sATM$Weekday <- ifelse(sATM$weekday == "Monday" | sATM$weekday == "Tuesday" | sATM$weekday == "Wednesday" | sATM$weekday == "Thursday" | sATM$weekday == "Friday", TRUE, FALSE)
 sATM$Weekend <- ifelse(sATM$weekday == "Saturday" | sATM$weekday == "Sunday", TRUE, FALSE)
 
 #Valuta
@@ -81,19 +80,15 @@ sATM$Region <- sapply(strsplit(sATM$Region, split='": "', fixed=TRUE), function(
 sATM$Region <- as.factor(sATM$Region)
 
 sATM$Id       <- as.factor(sATM$atm_id)
+sATM$Time     <- as.factor(sATM$Time)
 sATM$Holliday <- as.factor(sATM$Holliday)
-sATM$Morning  <- as.factor(sATM$Morning)
-sATM$Midday   <- as.factor(sATM$Midday)
-sATM$Evening  <- as.factor(sATM$Evening)
-sATM$Night    <- as.factor(sATM$Night)
 sATM$Customer <- as.factor(sATM$Customer)
-sATM$Weekday  <- as.factor(sATM$Weekday)
 sATM$Weekend  <- as.factor(sATM$Weekend)
 sATM$Payout   <- as.factor(sATM$Payout)
 
 #Final dataset
-fsATM <- sATM %>% select(Id, Holliday, Airportdist, Morning, Midday, Evening, Night, 
-                         Euro, Customer, Card, Weekday, Weekend, Payout, Region)
+fsATM <- sATM %>% select(Id, Holliday, Airportdist, Time, 
+                         Euro, Customer, Card, Weekend, Payout, Region)
 
 
 save(fsATM, file="generated_data/fsATM.Rdata")
