@@ -1,4 +1,0 @@
-"0","s5 <- bATM %>% filter(Euro == T) %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col()
-"
-"2","Error: object 'Euro' not found
-"

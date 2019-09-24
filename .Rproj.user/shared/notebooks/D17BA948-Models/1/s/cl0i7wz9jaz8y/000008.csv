@@ -1,3 +1,0 @@
-"0","lm_dummy <- predict(lm_dummy, newdata = ml)
-"
-"2","variable 'euro' is not a factor"

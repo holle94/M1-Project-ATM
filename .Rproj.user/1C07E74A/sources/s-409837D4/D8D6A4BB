@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1569313611421.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "D8D6A4BB",
+    "lastKnownWriteTime" : 1569313097,
+    "last_content_update" : 1569313097,
+    "path" : "//student.aau.dk/Users/aklitg15/Documents/GitHub/M1-Project-ATM/main.Rmd",
+    "project_path" : "main.Rmd",
+    "properties" : {
+        "cursorPosition" : "13,14",
+        "scrollLine" : "4"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

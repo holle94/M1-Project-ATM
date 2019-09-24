@@ -1,7 +1,6 @@
 
 library(geosphere)
 library(tidyverse)
-library(sf)
 
 # Features for the data ---------------------------------------------------
 
@@ -9,6 +8,8 @@ load(file="generated_data/sATM.Rdata")
 #sATM <- bATM
 
 # Holidays ----------------------------------------------------------------
+
+# Denmark
 # Ferie i Nordjylland (http://skoleferie-dk.dk/skoleferie-nordjylland/)
 
 Jul    <- ifelse(((sATM$month=="December" & 20<=sATM$day) | (sATM$month=="January" & sATM$day<=4)), TRUE,FALSE)
@@ -20,6 +21,7 @@ sATM$Holliday <- Jul | Vinter | Paaske | Sommer | Efter
 
 # Distance to other ATMs --------------------------------------------------
 
+
 mat <- as.matrix(data.frame(lon = sATM$atm_lon, 
                             lat = sATM$atm_lat))
 
@@ -27,14 +29,15 @@ Aal.luft <- c(9.842829962 , 57.088999644)
 Bil.luft <- c(9.150999396 , 55.73749705)
 Køb.luft <- c(12.650462   , 55.620750)
 
-#Distance is in meter and a straight line:
+#Afstand er i meter og i luftlinje:
 sATM$Aal.luft <- distHaversine(mat, Aal.luft, r=6378137)
 sATM$Bil.luft <- distHaversine(mat, Bil.luft, r=6378137)
 sATM$Køb.luft <- distHaversine(mat, Køb.luft, r=6378137)
 
-#Nearest airport in km:
+#Nærmeste lufthavn i km:
 sATM <- sATM %>% 
   mutate(Airportdist=round(pmin(sATM$Aal.luft,sATM$Bil.luft,sATM$Køb.luft)/1000,2))
+
 
 #Divid clock
 sATM$Time <- ifelse((sATM$hour>=4 & sATM$hour<=9),   "Morning", NA)
@@ -59,6 +62,8 @@ sATM$Card <- sapply(strsplit(sATM$card_type, split=' - on-us', fixed=TRUE), func
 sATM$Card <- as.factor(sATM$Card)
 
 #Region
+library(sf)
+
 loc <- sATM %>% group_by(atm_id) %>% 
   summarize(x=first(atm_lon), y=first(atm_lat))
 

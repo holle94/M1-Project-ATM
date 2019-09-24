@@ -1,4 +1,0 @@
-"0","index    <- createDataPartition(ml$euro.TRUE, p = 0.05, list = FALSE)
-"
-"2","Error in ml$euro.TRUE : $ operator is invalid for atomic vectors
-"

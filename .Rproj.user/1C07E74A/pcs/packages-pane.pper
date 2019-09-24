@@ -1,0 +1,7 @@
+{
+    "installOptions" : {
+        "installDependencies" : true,
+        "installFromRepository" : true,
+        "libraryPath" : "C:/ProgramData/Anaconda3/envs/caldiss/Lib/R/library"
+    }
+}
