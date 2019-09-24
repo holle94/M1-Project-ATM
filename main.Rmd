@@ -13,12 +13,18 @@ output:
 
 # Analisys of SparNord ATM transactions in 2017 
 Predictive moddeling of EURO vs. Non-EURO transactions
+```{r}
+pacman::p_load(tidyverse, ggforce, caret, VIM, gridExtra, 
+               ggmap, osmdata, sf, geosphere, yardstick, 
+               knitr, ggthemes, ggridges, kableExtra)
+```
+
 
 ```{r}
 library(tidyverse)
 library(ggforce)
 library(caret)
-library(yardstick)
+#library(yardstick)
 library(knitr)
 library(ggthemes)
 library(ggridges)
@@ -37,8 +43,6 @@ set.seed(20092019)
 ```
 
 
-
-
 ## Data
 
 ```{r fig.height=6, fig.width=10}
@@ -46,7 +50,7 @@ coord <- as.matrix(data.frame(min = c(8, 55),
                               max = c(13, 58), 
                               row.names = c("x","y")))
 
-s <- fATM %>% filter(atm_lat > coord[2,1] & atm_lat < coord[2,2] & 
+s <- bATM %>% filter(atm_lat > coord[2,1] & atm_lat < coord[2,2] & 
                      atm_lon < coord[1,2] & atm_lon > coord[1,1]) %>% 
   group_by(atm_id) %>% 
   summarize(n   = n(),
@@ -76,16 +80,17 @@ grid.arrange(p1,p2, nrow=1)
 
 
 ```{r fig.height=3, fig.width=10}
-s1 <- fATM %>% group_by(month)   %>% summarize(n=n()/1000) %>% ggplot(aes(month,n))   + geom_col()     + labs(title = "obs by month")+ theme(axis.text.x = element_text(angle = 90, vjust=-0.1))
-s2 <- fATM %>% group_by(day)     %>% summarize(n=n()/1000) %>% ggplot(aes(day,n))     + geom_col()         + labs(title = "obs by day")
-s3 <- fATM %>% group_by(weekday) %>% summarize(n=n()/1000) %>% ggplot(aes(weekday,n)) + geom_col() + labs(title = "obs by weekday")+ theme(axis.text.x = element_text(angle = 90, vjust=-0.1))
-s4 <- fATM %>% group_by(hour)    %>% summarize(n=n()/1000) %>% ggplot(aes(hour,n))    + geom_col()       + labs(title = "obs by hour") + scale_x_continuous(breaks=c(0,2,4,6,8,10,12,14,16,18,20,22,24))
+s1 <- bATM %>% group_by(month)   %>% summarize(n=n()/1000) %>% ggplot(aes(month,n))   + geom_col()     + labs(title = "obs by month")+ theme(axis.text.x = element_text(angle = 90, vjust=-0.1))
+s2 <- bATM %>% group_by(day)     %>% summarize(n=n()/1000) %>% ggplot(aes(day,n))     + geom_col()         + labs(title = "obs by day")
+s3 <- bATM %>% group_by(weekday) %>% summarize(n=n()/1000) %>% ggplot(aes(weekday,n)) + geom_col() + labs(title = "obs by weekday")+ theme(axis.text.x = element_text(angle = 90, vjust=-0.1))
+s4 <- bATM %>% group_by(hour)    %>% summarize(n=n()/1000) %>% ggplot(aes(hour,n))    + geom_col()       + labs(title = "obs by hour") + scale_x_continuous(breaks=c(0,2,4,6,8,10,12,14,16,18,20,22,24))
 
 grid.arrange(s1,s2,s3,s4, nrow=1)
 ```
 
 
 ```{r fig.height=6, fig.width=10}
+bATM$Euro <- as.factor(ifelse(bATM$currency=="DKK", FALSE, TRUE))
 s5 <- bATM %>% filter(Euro == T) %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col()
 
 grid.arrange(s5)

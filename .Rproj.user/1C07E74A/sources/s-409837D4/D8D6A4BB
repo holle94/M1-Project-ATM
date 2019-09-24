@@ -5,15 +5,15 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "0",
+    "hash" : "2964873948",
     "id" : "D8D6A4BB",
-    "lastKnownWriteTime" : 1569313097,
-    "last_content_update" : 1569313097,
+    "lastKnownWriteTime" : 1569314837,
+    "last_content_update" : 1569314837536,
     "path" : "//student.aau.dk/Users/aklitg15/Documents/GitHub/M1-Project-ATM/main.Rmd",
     "project_path" : "main.Rmd",
     "properties" : {
-        "cursorPosition" : "13,14",
-        "scrollLine" : "4"
+        "cursorPosition" : "97,0",
+        "scrollLine" : "85"
     },
     "relative_order" : 2,
     "source_on_save" : false,

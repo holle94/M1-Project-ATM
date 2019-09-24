@@ -1,22 +1,5 @@
-library(tidyverse)
-library(ggforce)
-library(caret)
-library(yardstick)
-library(knitr)
-library(ggthemes)
-library(ggridges)
-library(kableExtra)
-library(VIM)
-library(gridExtra)
 
-library(ggmap)
-library(osmdata)
-library(sf)
 
-pacman::p_load(tidyverse, ggforce, caret, VIM, gridExtra, ggmap, osmdata, sf, geosphere
-               yardstick, # For missing data diagnostics
-               knitr, # for missing data inputation
-               ggthemes, # For factor analysis, PCA, and clustering
-               ggridges, # for adittional visualizations of PCA etc
-               kableExtra # For some very nice datazis addons for ggplot2
-)
+pacman::p_load(tidyverse, ggforce, caret, VIM, gridExtra, 
+               ggmap, osmdata, sf, geosphere, yardstick, 
+               knitr, ggthemes, ggridges, kableExtra)
