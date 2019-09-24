@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1569314955154.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "8583C103",
+    "lastKnownWriteTime" : 1569314837,
+    "last_content_update" : 1569314955154,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "8B7A75E1",
+        "caption" : "fbATM",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=fbATM&cache_key=8B7A75E1",
+        "displayedObservations" : 250000,
+        "environment" : "",
+        "object" : "fbATM",
+        "preview" : 0,
+        "totalObservations" : 250000,
+        "variables" : 10
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

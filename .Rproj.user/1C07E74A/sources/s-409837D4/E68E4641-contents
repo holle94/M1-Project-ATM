@@ -1,5 +1,0 @@
-
-
-pacman::p_load(tidyverse, ggforce, caret, VIM, gridExtra, 
-               ggmap, osmdata, sf, geosphere, yardstick, 
-               knitr, ggthemes, ggridges, kableExtra)
