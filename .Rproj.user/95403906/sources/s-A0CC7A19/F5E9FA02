@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1569447029929.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "F5E9FA02",
+    "lastKnownWriteTime" : 12666584410423343,
+    "last_content_update" : 1569447029929,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "2248CD2C",
+        "caption" : "fsATM",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=fsATM&cache_key=2248CD2C",
+        "displayedObservations" : "10000",
+        "environment" : "",
+        "object" : "fsATM",
+        "preview" : "0",
+        "totalObservations" : "10000",
+        "variables" : "10"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

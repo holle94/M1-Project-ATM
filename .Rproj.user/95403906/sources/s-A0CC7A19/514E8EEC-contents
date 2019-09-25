@@ -1,0 +1,143 @@
+---
+title: "Untitled"
+author: "Mig"
+date: "20 sep 2019"
+output: html_document
+---
+
+```{r}
+
+library(tidyverse)
+library(ggforce)
+library(caret)
+#library(yardstick)
+library(knitr)
+library(ggthemes)
+library(ggridges)
+library(kableExtra)
+library(VIM)
+library(ggplot2)
+library(gridExtra)
+
+
+```
+
+```{r}
+base <- "#1f83b4"
+
+
+#transaktioner generelt 
+bATM %>% group_by(weekday) %>% summarize(n=n()) %>% ggplot(aes(weekday,n)) + geom_col(color = base, fill = base)
+bATM %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col(color = base, fill = base)
+bATM %>% group_by(day) %>% summarize(n=n()) %>% ggplot(aes(day,n)) + geom_col(color = base, fill = base)
+bATM %>% group_by(hour) %>% summarize(n=n()) %>% ggplot(aes(hour,n)) + geom_col(color = base, fill = base)
+
+#Ovenstående plots illustrerer fordelingen af transaktioner på hhv. de forskellige måneder, ugedage, dage på måneden og timer.
+
+#transaktioner for euro
+
+bATM %>% filter(currency == "EUR") %>% group_by(weekday) %>% summarize(n=n()) %>% ggplot(aes(weekday,n)) + geom_col(color = base, fill = base)
+bATM %>% filter(currency == "EUR") %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col(color = base, fill = base)
+bATM %>% filter(currency == "EUR") %>% group_by(day) %>% summarize(n=n()) %>% ggplot(aes(day,n)) + geom_col(color = base, fill = base)
+bATM %>% filter(currency == "EUR") %>% group_by(hour) %>% summarize(n=n()) %>% ggplot(aes(hour,n)) + geom_col(color = base, fill = base)
+```
+
+```{r}
+#fbATM
+
+
+
+#hist over distance til lufthavn fbATM
+ggplot(fbATM, aes(x=fbATM$Airportdist, stat(density))) + geom_histogram(binwidth=3, col = base, fill = base) + 
+  facet_wrap(~Euro, nrow=2) + labs(title="Airport distance w. density euro or not")
+
+
+#Card-type/Euro
+
+fbATM %>% filter(Euro =="TRUE") %>% group_by(Card) %>% 
+  summarize(n=n())  %>%
+  mutate(freq = n / sum(n)) %>% 
+  ggplot(aes(Card,freq)) + geom_col(fill=base)
+s17
+
+posn_d = position_dodge(width = 0.8)
+bATM %>% group_by(card_type, currency) %>% 
+  summarize(n=n()) %>% 
+  ggplot(aes(card_type, fill=currency)) + 
+  geom_bar(position = "fill") + 
+  scale_fill_tableau(palette = "Classic Cyclic", type = "regular")
+
+
+ggplot(data = bATM, aes(card_type, fill=currency)) + geom_bar(position = "stack")+ 
+  scale_fill_tableau(palette = "Classic Cyclic", type = "regular")
+ggplot(data = bATM, aes(card_type, fill=currency)) + geom_bar(position = "dodge")+ 
+  scale_fill_tableau(palette = "Classic Cyclic", type = "regular")
+
+```
+
+
+
+
+```{r}
+#bATM
+
+bATM %>% filter(currency =="EUR") %>% group_by(day, month) %>% summarize(n=n()) %>% ggplot(aes(day, n)) + geom_col(fill=base, color=base) + facet_wrap(~month)
+```
+
+
+
+```{r}
+#fdata
+
+ggplot(fdata, aes(x=fdata$Airportdist)) + geom_histogram()
+ggplot(fdata, aes(x=fdata$Airportdist, stat(density))) + geom_histogram(binwidth=1)
+ggplot(fdata, aes(x=fdata$Airportdist, stat(density))) + geom_histogram(binwidth=3, col = base, fill = base) + 
+  facet_wrap(~Euro, nrow=2) + labs(title="Airport distance w. density euro or not")
+
+#Vi laver dette plot for at illustrere om der er en sammenhæng mellem euro-hævninger og afstanden til nærmeste lufthavn. Man kunne forestille sig at hæveautomater tæt på lufthævnen i højere grad bliver brugt til at hæve euro end andre, i forbindelse med at folk skal have euro med på ferier. Som man skal se ud fra histogrammet er der dog ikke en klar tendens til at dette er tilfældet da fordelingen er noget ujævn, ud fra vores hypotese så ville vi forvente at tætheden ville være størst i starten og derefter være nedadgående. 
+
+
+```
+
+
+```{r}
+#Euro/Holiday
+
+fdata %>% filter(Euro == "TRUE") %>% group_by(Holliday) %>% summarize(n=n()) %>% ggplot(aes(Holliday,n)) + geom_col(fill=base)
+
+fdata %>% group_by(Holliday, Euro) %>% summarize(n=n()) %>% ggplot(aes(Holliday,n, fill=Euro)) + geom_col(position = "fill") + scale_fill_tableau(palette = "Classic Cyclic", type = "regular") + labs(title="Euro transactions in holiday")
+```
+
+
+```{r}
+#Euro/Region
+
+fdata %>% group_by(Region, Euro) %>% summarize(n=n()) %>% ggplot(aes(Region,n, fill=Euro)) + geom_col(position = "fill") + 
+  scale_fill_tableau(palette = "Classic Cyclic", type = "regular") + labs(title="Transactions by region")
+```
+
+```{r}
+#Customer/Euro
+
+fdata %>% group_by(Customer, Euro) %>% summarize(n=n()) %>% ggplot(aes(Customer,n, fill=Euro)) + geom_col(position = "fill") + 
+  scale_fill_tableau(palette = "Classic Cyclic", type = "regular") + labs(title="Customer or not")
+```
+
+```{r}
+#Weekend/Euro
+fdata %>% group_by(Weekend, Euro) %>% summarize(n=n()) %>% ggplot(aes(Weekend,n, fill=Euro)) + geom_col(position = "fill") + 
+  scale_fill_tableau(palette = "Classic Cyclic", type = "regular")
+```
+
+```{r}
+#Payout/Euro
+fdata %>% group_by(Payout, Euro) %>% summarize(n=n()) %>% ggplot(aes(Payout,n, fill = Euro)) + geom_col(position = "fill") + 
+  scale_fill_tableau(palette = "Classic Cyclic", type = "regular")
+```
+
+
+
+
+
+
+

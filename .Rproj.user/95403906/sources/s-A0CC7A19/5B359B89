@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1569448751940.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "5B359B89",
+    "lastKnownWriteTime" : 12666584410423343,
+    "last_content_update" : 1569448751940,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "6DE941F",
+        "caption" : "bATM",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=bATM&cache_key=6DE941F",
+        "displayedObservations" : 250000,
+        "environment" : "",
+        "object" : "bATM",
+        "preview" : 0,
+        "totalObservations" : 250000,
+        "variables" : 34
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}
