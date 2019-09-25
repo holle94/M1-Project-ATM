@@ -202,6 +202,7 @@ save(fsATM, file = "generated_data/fsATM.Rdata")
 ```{r}
 load(file = "generated_data/fsATM.Rdata")
 load(file = "generated_data/fbATM.Rdata")
+load(file = "generated_data/fdata.Rdata")
 ```
 
 
@@ -355,6 +356,10 @@ sATM[,vars2] %>%
 
 ```
 
+
+
+
+
 ```{r}
 #km %>% 
 #  fviz_cluster(data = sATM[,vars2],
@@ -398,7 +403,7 @@ sATM %>%
 
 
 
-
+We plot the 
 
 ```{r fig.height=6, fig.width=10}
 km <- sATM[,vars2] %>% 
@@ -447,16 +452,16 @@ df %>%
 ```{r}
 cv <- trainControl(method = "cv", number = 5)
 
-
 ml <- fbATM
+ml$Euro <- as.factor(ifelse(ml$Euro == "TRUE", "Yes", "No"))
 
-
-index    <- createDataPartition(ml$Euro, p = 0.15, list = FALSE)
+index    <- createDataPartition(ml$Euro, p = 0.03, list = FALSE)
 training <- ml[index,] 
 test     <- ml[-index,] 
 ```
 
 ```{r}
+
 a <- Sys.time()
 fit_log <- train(Euro ~ .,
                  data      = training,
@@ -464,14 +469,38 @@ fit_log <- train(Euro ~ .,
                  method    = "glm", 
                  family    = "binomial",
                  metric    = 'Accuracy')
+
+fit_tre <- train(Euro ~ .,
+                 data      = training, 
+                 trControl = cv, 
+                 metric    = "Kappa",
+                 method    = "rpart", 
+                 tuneGrid  = expand.grid(cp = c(0.001, 0.005 ,0.01, 0.02, 0.04)))
+
+
+fit_bag <- train(Euro ~ ., 
+                 data = training, 
+                 method = "treebag",
+                 nbagg = 50,
+                 metric = "ROC",
+                 trControl = trainControl(method = "cv", number = 5, classProbs = T))
+
+
+fit_raf <- train(Euro ~ ., 
+                 data      = sample_n(training,3000),
+                 trControl = cv,
+                 tuneGrid  = expand.grid(.mtry = (1:7)),
+                 method    = 'rf',
+                 metric    = 'Accuracy')
+
+fit_svm <- train(Euro ~ ., 
+                 data      = sample_n(training,5000),
+                 trControl = cv,
+                 tuneGrid  = expand.grid(C = 10^seq(1, -1, by = -0.02)),
+                 method    = 'svmLinear',
+                 metric    = 'Accuracy')
+
 Sys.time() - a
-
-conf_log <- table(predict(fit_log,  test), test$Euro)
-conf_log
-
-
-conf_log <- table(predict(fit_log,  test), test$Id)
-conf_log
 ```
 
 
@@ -479,24 +508,23 @@ conf_log
 
 
 ```{r}
+conf_bag <- table(predict(fit_bag,  test), test$Euro)
+conf_bag
 
-#conf_raf <- table(predict(fit_raf,  test), test$euro)
-#conf_raf
+conf_tre <- table(predict(fit_tre,  test), test$Euro)
+conf_tre
 
 conf_log <- table(predict(fit_log,  test), test$Euro)
 conf_log
-#
-#conf_lok <- table(predict(fit_lok,  test), test$euro)
-#conf_lok
-#
-#conf_net <- table(predict(fit_net,  test), test$euro)
-#conf_net
-#
-#conf_svm <- table(predict(fit_svm,  test), test$euro)
-#conf_svm
 
-random   <- rbinom(n = length(test$Euro), size = 1, prob = mean(as.logical(training$Euro)))
-conf_ran <- table(as.factor(if_else(random == 1, "TRUE", "FALSE")), test$Euro)
+conf_raf <- table(predict(fit_raf,  test), test$Euro)
+conf_raf
+
+conf_svm <- table(predict(fit_svm,  test), test$Euro)
+conf_svm
+
+random   <- rbinom(n = length(test$Euro), size = 1, prob = mean(training$Euro == "Yes"))
+conf_ran <- table(as.factor(if_else(random == 1, "Yes", "No")), test$Euro)
 conf_ran
 ```
 
@@ -506,30 +534,35 @@ conf_ran
 
 
 
+
 ```{r}
+bag <- rbind(spec(conf_bag), precision(conf_bag), accuracy(conf_bag), recall(conf_bag), npv(conf_bag))
+tre <- rbind(spec(conf_tre), precision(conf_tre), accuracy(conf_tre), recall(conf_tre), npv(conf_tre))
 #raf <- rbind(spec(conf_raf), precision(conf_raf), accuracy(conf_raf))
 #net <- rbind(spec(conf_net), precision(conf_net), accuracy(conf_net), recall(conf_net), npv(conf_net))
-#raf <- rbind(spec(conf_raf), precision(conf_raf), accuracy(conf_raf), recall(conf_raf), npv(conf_raf))
+raf <- rbind(spec(conf_raf), precision(conf_raf), accuracy(conf_raf), recall(conf_raf), npv(conf_raf))
 log <- rbind(spec(conf_log), precision(conf_log), accuracy(conf_log), recall(conf_log), npv(conf_log))
 #lok <- rbind(spec(conf_lok), precision(conf_lok), accuracy(conf_lok), recall(conf_lok), npv(conf_lok))
 ran <- rbind(spec(conf_ran), precision(conf_ran), accuracy(conf_ran), recall(conf_ran), npv(conf_ran))
-#svm <- rbind(spec(conf_svm), precision(conf_svm), accuracy(conf_svm), recall(conf_svm), npv(conf_svm))
+svm <- rbind(spec(conf_svm), precision(conf_svm), accuracy(conf_svm), recall(conf_svm), npv(conf_svm))
 
+bag$model <- "Bagged Tree"
+tre$model <- "Classification Tree"
 #raf$model <- "Random Forrest"
 #net$model <- "Elastic Net Regression"
-#raf$model <- "Random Forrest"
-log$model <- "Logistic Regression - glm"
+raf$model <- "Random Forrest"
+log$model <- "Logistic Regression"
 #lok$model <- "Logistic Regression - glmnet"
 ran$model <- "Random Assignment"
-#svm$model <- "Support Vector Machine Model"
+svm$model <- "Support Vector Machine Model"
 
 #df <- rbind(log, lok, ran, net, raf, svm)
 
-df <- rbind(ran, log)
+df <- rbind(ran, log, tre, bag, svm, raf)
 
 ggplot(df, aes(.metric, .estimate, fill = reorder(model, desc(.estimate)))) + 
   geom_col(position="dodge", width = 0.6) + 
-  scale_fill_tableau(palette = "Hue Circle", type = "regular") + 
+  scale_fill_tableau(palette = "Classic Cyclic", type = "regular") + 
   labs(title="Model performance on predicting Legendary status", 
        subtitle="Crossvalidated 1/5 split", fill="Predictive Model")
 ```
