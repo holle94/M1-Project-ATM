@@ -29,7 +29,6 @@ fATM %>%
   summarize(MeanDistance = mean(airportdist))
 
 
-
 tab <- table(fATM$holliday, fATM$euro)
 tab
 paste0("Proportion of non-EURO transactions during vacations ", round(tab[2,1] / sum(tab[,1]),2),"%")
