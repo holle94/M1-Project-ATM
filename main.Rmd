@@ -10,10 +10,16 @@ output:
     toc_float:
       collapsed: no
 ---
-
 # SparNord ATM transactions
-Predictive moddeling of EURO vs. Non-EURO transactions
+In this project we would work around the following problem statement. To solve the statement we will use the ML-techniques which the course so far have presented for us.
 
+>>Predict whether the transaction in the Spar Nord ATMs is a euro transaction or not. 
+
+In order to answer our problem statement, we’ve obtained a data set published by Spar Nord A/S. The data set contains data of all cash withdrawals made at their ATMs in Denmark in 2017. Based on the data set, we then want to set up a model which can 'predict' whether the transaction in the ATMs is in euros or not.
+
+Source: https://sparnordopenbanking.com/OpenData.
+
+The raw-dataset contains 2.5 million observations with 33 variables, which range from information about day, time and month to weather conditions, coordinates and cardtype. Some of the variables include NA, but those are primarily message codes and text related to the withdrawal (some kind of error). This mean the dataset are pretty complete and there are no need for data imputation or cleaning. The next step is to modify the data to our problem statement, which is descried in feature generation. Before we get to that section, we will present a visually overview of the raw-data with summary statistics and explanatory comments. 
 
 ```{r eval=FALSE, include=FALSE}
 #pacman::p_load(tidyverse, ggforce, caret, VIM, gridExtra, 
@@ -41,6 +47,7 @@ library(GGally)
 library(FactoMineR)
 library(geosphere)
 library(sf)
+library(Hmisc)
 
 base <- "#1f83b4"
 
@@ -52,6 +59,7 @@ set.seed(20092019)
 
 
 ## Data
+One of the most common errors in data science is not looking at the data, so we will start with this. The dataset includes 113 different ATM's from SparNord placed around Denmark. Each include coordinates, which will be usefull later for feature generation, but we can use these to plot the machines in a map.
 
 ```{r MAP, fig.height=6, fig.width=11, message=FALSE, warning=FALSE}
 coord <- as.matrix(data.frame(min = c(8, 55), 
@@ -86,7 +94,9 @@ p2 <- ggmap(map9) +
 grid.arrange(p1,p2, nrow=1)
 ```
 
+In this first visualisation we see that the activity is based heavily around Nordjylland, which is not surprising if you know the bank. We also see that there is a substantial difference in the number of transactions at each machine.
 
+Well, lets see how the transactions are distributed in time:
 
 ```{r fig.height=3, fig.width=10}
 s1 <- bATM %>% group_by(month) %>% summarize(n=n()/1000) %>% 
@@ -180,8 +190,11 @@ sATM$Euro <- as.factor(ifelse(sATM$currency=="DKK", FALSE, TRUE))
 sATM$Payout <- ifelse((sATM$day <=4 | sATM$day >= 27), TRUE, FALSE)
 #Customer
 sATM$Customer <- str_detect(sATM$card_type, pattern = "on-us")
+
 #Cardtype
 sATM$Card <- sapply(strsplit(sATM$card_type, split = ' - on-us', fixed = TRUE), function(x) (x[1]))
+sATM$Card <- str_to_lower(sATM$Card)
+sATM$Card <- capitalize(sATM$Card)
 sATM$Card <- as.factor(sATM$Card)
 
 #Region
@@ -215,7 +228,7 @@ save(fsATM, file = "generated_data/fsATM.Rdata")
 
 
 
-The first step is to prepare the raw data for our analysis. The raw dataset doesn't need to be cleaned, because it's pretty complete for our purpose. Based on the problem statement we want the algorithm to predict from following parameters:
+The first step is to prepare the raw data for our analysis. The raw dataset doesn't need to be cleaned, because it's pretty complete for our purpose. Based on the problem statement we want the algorithm to predict Euro or not Euro transaction from the following parameters:
 
 - Holliday
   This parameter contains information about the specific day, is it a "normal" day or a day in the vacation, the parameter are therefore logical.     It's contructed on day and month from the raw dataset. Information about vacation are taken from: http://skoleferie-dk.dk/skoleferie-nordjylland/.   We argue that the purpose for Euro are bigger in the vacation then else, which should provide usefull information to the algorithm.
@@ -300,43 +313,40 @@ table(fbATM$Euro, fbATM$Id) %>%
 
 
 ## Unsupervised Models
+First we look whether there is some missing data in the variables:
 
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-
+```{r fig.height=3, fig.width=10}
 vars <- c("day","hour","atm_id","atm_street_number","atm_zipcode","atm_lat",
           "atm_lon","message_code","weather_lat","weather_lon","weather_city_id",
           "temp","pressure","humidity","wind_speed","wind_deg","rain_3h",
           "clouds_all","weather_id")
 
-```
-
-```{r fig.height=5, fig.width=10}
-ggcorr(sATM[vars], label = TRUE, label_size = 2, label_round = 2, hjust = 0.90) + 
-  labs(title="Correlation among variables", fill="Correlation") + coord_cartesian(expand=T)
-
-ggcorr(sATM[vars], label = TRUE, label_size = 2, label_round = 2, hjust = 0.90) + 
-  labs(title="Correlation among variables", fill="Correlation") + 
-  coord_cartesian(expand=T)
-
-#unique(sATM$message_code)
-#summary(sATM$message_code)
-
-```
-
-```{r fig.height=3, fig.width=10}
 sATM[,vars] %>% 
   aggr(col = c('white',base), 
-       numbers = TRUE, 
-       sortVars = TRUE, 
        labels = names(sATM[,vars]), 
        cex.axis = 0.5, 
        gap = 0.5, 
        ylab=c("Missing data","Pattern"))
 ```
 
-### PCA
 
-```{r fig.height=3, fig.width=10}
+```{r fig.height=5, fig.width=10, message=FALSE, warning=FALSE}
+ggcorr(sATM[vars], label = TRUE, label_size = 2, label_round = 2, hjust = 0.90) + 
+  labs(title="Correlation among variables", fill="Correlation") + 
+  scale_fill_gradient2(midpoint=0, low=base, mid="white", high=base)+
+  coord_cartesian(expand=T)
+
+#unique(sATM$message_code)
+#summary(sATM$message_code)
+```
+
+
+
+
+### PCA
+We do a PCA, but it doesn't explain so much as the data is very hetrogene, with 4 variables the accumuleted variance explained is only 46%
+
+```{r fig.height=3, fig.width=10, message=FALSE, warning=FALSE}
 #sATM <- sATM %>% select(-weather_lat, -weather_lon)
 vars2 <- c("day","hour","atm_id","atm_street_number","atm_zipcode","atm_lat",
            "atm_lon","weather_city_id","temp","pressure","humidity","wind_speed",
@@ -359,8 +369,6 @@ rbind(df1,df2) %>% as_tibble %>%
   facet_wrap(~type, scale="free") + scale_x_continuous(breaks=c(0:15)) + 
   labs(title="Screeplot: Number of factors in PCA", x="Number of factors")
 
-
-
 loadings <- pca$rotation %>% 
   abs() %>% 
   sweep(2, colSums(.), "/") %>% 
@@ -368,7 +376,7 @@ loadings <- pca$rotation %>%
   rownames_to_column("name")
 
 loadings[,-1] <- apply(loadings[,-1], MARGIN = 2, FUN = round, digits=2)
-head
+
 a <- loadings %>% dplyr::select(name, PC1) %>% arrange(desc(PC1)) %>% head(6)
 b <- loadings %>% dplyr::select(name, PC2) %>% arrange(desc(PC2)) %>% head(6)
 c <- loadings %>% dplyr::select(name, PC3) %>% arrange(desc(PC3)) %>% head(6)
@@ -376,40 +384,28 @@ d <- loadings %>% dplyr::select(name, PC4) %>% arrange(desc(PC4)) %>% head(6)
 
 kable(cbind(a,b,c,d)) %>% kable_styling("condensed")
 
-
 #pca1 <- sATM[,vars2] %>%
 #  PCA(scale.unit = TRUE, graph = FALSE)
-#
 #pca1 %>% 
 #  fviz_screeplot(addlabels = TRUE, 
 #                 ncp = 10, 
 #                 ggtheme = theme_gray())
 
-```
-
-
-```{r}
 #pca2 %>% 
 #  fviz_screeplot(addlabels = TRUE, 
 #                 ncp = 10, 
 #                 ggtheme = theme_gray())
-
-```
-
-
-```{r}
-
 #sATM %>% select(-rain_3h,-weather_lon, -weather_lat, -message_code, -message_text)
   
 #sATM[,vars2] %>% 
 #  scale() %>%
 #  fviz_nbclust(kmeans, method = "wss")  
-
 ```
 
 
 
 ### Kmeans
+Kmeans clustering is used to seperate the variables into 4 clusters
 
 ```{r fig.height=3, fig.width=10}
 #km %>% 
@@ -481,7 +477,7 @@ df %>%
 
 
 
-```{r}
+```{r warning=FALSE}
 sATM %>%
   bind_cols(cluster = km$cluster) %>%
   select(vars2, cluster) %>%
@@ -504,7 +500,27 @@ sATM %>%
 
 
 ## Supervised Models
-We're fitting 6 different models to the data. One big challenge is that we have alot of observations, 2.5m, and that
+We're fitting 6 different models to the data. In this we face som challenges 
+- Size of the data: A big challenge is that we have alot of observations, 2.5m, and that is way too much to run on our computers for some models, especially if we want to do any kind of parametertuning. 
+- Grouped data: Another challenge is that the data is grouped, this means that some algorrithms, like LDA, have problems seperating the classes.
+- Signal to noise ratio: The data has few Eurotransactions, and on top of that there are no initutive good variables to seperate whether people get Euro or DKK from the ATM, as we see it the most promising is wheter the transaction is in a holiday period or not
+- Factors: Almost all the features consists of factors. This is a challenge because the models seperate them into really large dummy matrices, and it can create problems if there is not enough variation. The only contenious varible we have is distance to nearest airport.
+
+Facing the size challenge has meant that we decided to do the supervised models in two sections. one with normal sampeling, and one with downsampeling. Our models and the relevant tuning parametres are:
+
+1. Logistic regression
+2. Elastic Net
+  alpha: decides the penalty enforced on the parametres
+  lambda: the weight between Lasso and Ridge regression
+3. Classification tree
+  CP: is a complexity parametre that decides the degree of pruning of the tree
+4. Bagged classification tree
+  nbagg: describes how manny trees is created and 
+5. Random forrest
+  mtry: the number of variables that is included in each split
+  ntree: number of branches grown after each split 
+6. Suport vector macines/classifier
+  kernel: We use a linear kernel, but there are manny choices like polynomial 
 
 
 ```{r}
@@ -531,13 +547,23 @@ fit_log <- train(Euro ~ .,
                  family    = "binomial",
                  metric    = 'Accuracy')
 b <- Sys.time()
+fit_ela <- train(Euro ~ .,
+                 data      = training,
+                 trControl = cv, 
+                 tuneGrid  = expand.grid(alpha  = seq(0, 1, by = 0.2), 
+                                         lambda = 10^seq(1, -4, by = -1)),
+                 method    = "glmnet", 
+                 family    = "binomial",
+                 metric    = 'Accuracy')
+
+c <- Sys.time()
 fit_tre <- train(Euro ~ .,
                  data      = training, 
                  trControl = cv, 
                  metric    = "Kappa",
                  method    = "rpart", 
                  tuneGrid  = expand.grid(cp = c(0.001, 0.005)))
-c <- Sys.time()
+d <- Sys.time()
 
 fit_bag <- train(Euro ~ ., 
                  data      = training, 
@@ -545,32 +571,34 @@ fit_bag <- train(Euro ~ .,
                  nbagg     = 50,
                  metric    = "ROC",
                  trControl = trainControl(method = "cv", number = 5, classProbs = T))
-d <- Sys.time()
+e <- Sys.time()
 
 fit_raf <- train(Euro ~ ., 
-                 data      = sample_n(training, 500),
+                 data      = sample_n(training, 2000),
                  trControl = cv,
-                 tuneGrid  = expand.grid(.mtry = (1:7)),
+                 .mtry     = 6,
+                 ntree     = 100,
                  method    = 'rf',
                  metric    = 'Accuracy')
-e <- Sys.time()
+f <- Sys.time()
 fit_svm <- train(Euro ~ ., 
                  data      = sample_n(training, 500),
                  trControl = cv,
                  tuneGrid  = expand.grid(C = 10^seq(1, -1, by = -0.02)),
                  method    = 'svmLinear',
                  metric    = 'Accuracy')
-f<- Sys.time()
+g<- Sys.time()
 ```
 
 
 ```{r TIME}
 cat(paste0("Logistic: ", round(difftime(b,a, units = "mins"),2),"\n",
-           "Tree:     ", round(difftime(c,b, units = "mins"),2),"\n",
-           "Bagged:   ", round(difftime(d,c, units = "mins"),2),"\n",
-           "RF:       ", round(difftime(e,d, units = "mins"),2),"\n",
-           "SVM:      ", round(difftime(f,e, units = "mins"),2),"\n",
-           "Total:    ", round(difftime(f,a, units = "mins"),2),"\n"))
+           "Elastic:  ", round(difftime(c,b, units = "mins"),2),"\n",
+           "Tree:     ", round(difftime(d,c, units = "mins"),2),"\n",
+           "Bagged:   ", round(difftime(e,d, units = "mins"),2),"\n",
+           "RF:       ", round(difftime(f,e, units = "mins"),2),"\n",
+           "SVM:      ", round(difftime(g,f, units = "mins"),2),"\n",
+           "Total:    ", round(difftime(g,a, units = "mins"),2),"\n"))
 
 ```
 
@@ -584,6 +612,9 @@ conf_tre <- table(predict(fit_tre,  test), test$Euro)
 #conf_tre
 
 conf_log <- table(predict(fit_log,  test), test$Euro)
+#conf_log
+
+conf_ela <- table(predict(fit_ela,  test), test$Euro)
 #conf_log
 
 conf_raf <- table(predict(fit_raf,  test), test$Euro)
@@ -600,13 +631,14 @@ conf_ran <- table(as.factor(if_else(random == 1, "Yes", "No")), test$Euro)
 
 
 ```{r}
-kable(cbind(conf_bag, conf_tre, conf_log, conf_raf, conf_svm, conf_ran)) %>% 
+kable(cbind(conf_bag, conf_tre, conf_log, conf_ela, conf_raf, conf_svm, conf_ran)) %>% 
   kable_styling("bordered", "condensed") %>%
   column_spec(1, bold = T, color="black") %>%
   add_header_above(c(" "                             = 1, 
                      "Bagged\nTree"                  = 2, 
                      "Classification\nTree"          = 2, 
                      "Logistic\nRegression"          = 2, 
+                     "Elastic Net\nRegression"       = 2,
                      "Random\nForrest"               = 2, 
                      "Support Vector\nMachines"      = 2,
                      "Random\nAssignment"            = 2))
@@ -621,6 +653,7 @@ bag <- rbind(spec(conf_bag), precision(conf_bag), accuracy(conf_bag), recall(con
 tre <- rbind(spec(conf_tre), precision(conf_tre), accuracy(conf_tre), recall(conf_tre), npv(conf_tre))
 raf <- rbind(spec(conf_raf), precision(conf_raf), accuracy(conf_raf), recall(conf_raf), npv(conf_raf))
 log <- rbind(spec(conf_log), precision(conf_log), accuracy(conf_log), recall(conf_log), npv(conf_log))
+ela <- rbind(spec(conf_ela), precision(conf_ela), accuracy(conf_ela), recall(conf_ela), npv(conf_ela))
 ran <- rbind(spec(conf_ran), precision(conf_ran), accuracy(conf_ran), recall(conf_ran), npv(conf_ran))
 svm <- rbind(spec(conf_svm), precision(conf_svm), accuracy(conf_svm), recall(conf_svm), npv(conf_svm))
 
@@ -628,12 +661,13 @@ bag$model <- "Bagged Tree"
 tre$model <- "Classification Tree"
 raf$model <- "Random Forrest"
 log$model <- "Logistic Regression"
+ela$model <- "Elastic Net Regression"
 ran$model <- "Random Assignment"
 svm$model <- "Support Vector Machines"
 
 #df <- rbind(log, lok, ran, net, raf, svm)
 
-df <- rbind(ran, log, tre, bag, svm, raf)
+df <- rbind(ran, log,ela, tre, bag, svm, raf)
 
 ggplot(df, aes(.metric, .estimate, fill = reorder(model, desc(.estimate)))) + 
   geom_col(position="dodge", width = 0.6) + 
@@ -645,9 +679,9 @@ ggplot(df, aes(.metric, .estimate, fill = reorder(model, desc(.estimate)))) +
 
 
 ### Down Sampeling
+46439 (1.92 %) of the transactions made in SparNord’s ATM’s are transactions of Euro (we have included USD$ and GBP£ as well since they are even tinier proportions of the transactions). The huge disproportion between Euro and DKK transactions creates a bias towards predicting DKK. To solve this problem undersampling is used. This is done by selecting n samples from the dominating class (DKK), where n is equal to the total number of Euro transactions in the training set. This creates a dataset that is approx. 50/50 split between Euro and DKK transactions. 
 
-
-
+This however excludes a lot of information from the majority class in the dataset, as the final set is only of … observations. An alternative approach could be to use oversampling, where the minority class is re-sampled. This however causes problems with overfitting, as the observations of Euro transactions are duplicated. Due to the size of the dataset undersampling is used.
 
 
 
