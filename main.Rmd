@@ -11,16 +11,18 @@ output:
       collapsed: no
 ---
 
-# Analisys of SparNord ATM transactions in 2017 
+# SparNord ATM transactions
 Predictive moddeling of EURO vs. Non-EURO transactions
-```{r}
+
+
+```{r eval=FALSE, include=FALSE}
 #pacman::p_load(tidyverse, ggforce, caret, VIM, gridExtra, 
 #               ggmap, osmdata, sf, geosphere, yardstick, 
 #               knitr, ggthemes, ggridges, kableExtra)
 ```
 
 
-```{r message=FALSE, warning=FALSE}
+```{r PACKAGES, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(ggforce)
 library(caret)
@@ -37,7 +39,6 @@ library(osmdata)
 library(sf)
 library(GGally)
 library(FactoMineR)
-#library(factoextra)
 library(geosphere)
 library(sf)
 
@@ -52,7 +53,7 @@ set.seed(20092019)
 
 ## Data
 
-```{r fig.height=6, fig.width=11, message=FALSE, warning=FALSE}
+```{r MAP, fig.height=6, fig.width=11, message=FALSE, warning=FALSE}
 coord <- as.matrix(data.frame(min = c(8, 55), 
                               max = c(13, 58), 
                               row.names = c("x","y")))
@@ -213,6 +214,42 @@ save(fsATM, file = "generated_data/fsATM.Rdata")
 ```
 
 
+
+The first step is to prepare the raw data for our analysis. The raw dataset doesn't need to be cleaned, because it's pretty complete for our purpose. Based on the problem statement we want the algorithm to predict from following parameters:
+
+- Holliday
+  This parameter contains information about the specific day, is it a "normal" day or a day in the vacation, the parameter are therefore logical.     It's contructed on day and month from the raw dataset. Information about vacation are taken from: http://skoleferie-dk.dk/skoleferie-nordjylland/.   We argue that the purpose for Euro are bigger in the vacation then else, which should provide usefull information to the algorithm.
+  
+- Airport distance
+  This parameter contains information about the distance to the closest airport, the parameter are therefore numerical. It's contructed on the        longitude and laditude on each ATM from the raw dataset and the included airports. The included airports are Aalborg, Billund and Copenhagen. The   hypotese is that, when flying your destination are likely an Euro-country, which means that ATM closest to an airport would be used to get euro.
+  
+- Time
+  This parameter contains information about the time of the day, which are grouped into 4: morning (04-09), midday (10-15), evening (16-21) and       night (22-03), the parameter are therefore a character. It's contructed on hour from the raw dataset. This parameter should help the algorithm,     beacuse it's most likely that an euro-transaction is conducted beteewn 10-15. The reason behind is that in Denmark we use DKK, which means these    transactions are more likely to happen anytime and spontaneously, where euro-transaction is believed to be prepared and with a purpose.
+
+- Weekday
+  This parameter contains information about day, which are grouped into 2: weekday and weekend, the parameter are therefore a character. It's         contructed on day from the raw dataset. This parameter should help the algorithm to be more precise combined with the other parameters. There are   no specific reason behind.
+  
+- Payout
+  This parameter contains information about the time you get payed (salary, transfer payments etc.), which typical happen beteewn the 27th and 31th   of each month and in relation to this you would withdraw our money beteewn the 1st and 4th. The parameter are therefore logical and contructed on   day and month from the raw dataset. The probability of a DKK-transaction is therefore believed to be very high in this date period.
+
+- Customer
+  This parameter contains information about the person behind the transaction, since it's data form SparNord, we can tell if the person is a          customer or not. The parameter are therefore a logical and contructed on card_type with the text "on-us" from the raw dataset. We argue an          euro-transaction are higher among customers of the bank since there are fees on these transactions for the non-customers.
+  
+- Region
+  This parameter contains information about the region, which are grouped into 4: Region Nordjylland, Region Midtjylland, Region Syddanmark, Region   Sj?lland and Region Hovedstaden. The parameter are therefore a character. It's contructed on the longitude and laditude from the raw dataset and    the specific longitude and laditudes belonging to each region. Since it's SparNord data most of the transactions are believed to be conducted in    Region Nordjylland, where the use of euro is modestly.
+  
+- ATM ID
+  This parameter contains information about each specific ATM there are in the dataset which is 113. The parameter are therefore 
+  categorically. It's contructed on atm_id from the raw dataset. We are not sure all of the ATMs have the option to withdraw euro, and therefore we   make this parameter to remove the doubt.
+  
+- Cardtype
+  This parameter contains information about each cardtype used in the ATMs, which are grouped into 9 categories and the parameter are therefore a     character. It's contructed on card_type from the raw dataset. We believe some of the cardtypes are more used to withdraw euro then others.
+  
+This can be presented as:
+
+$$Euro = Holliday + Airport + Time + Weekday + Payout + Customer + Region + ATM.ID + Cardtype$$
+
+
 ### Control of Features
 
 ```{r}
@@ -275,7 +312,11 @@ vars <- c("day","hour","atm_id","atm_street_number","atm_zipcode","atm_lat",
 
 ```{r fig.height=5, fig.width=10}
 ggcorr(sATM[vars], label = TRUE, label_size = 2, label_round = 2, hjust = 0.90) + 
-  labs(title="Correlation among variables", legend="Correlation") + coord_cartesian(expand=T)
+  labs(title="Correlation among variables", fill="Correlation") + coord_cartesian(expand=T)
+
+ggcorr(sATM[vars], label = TRUE, label_size = 2, label_round = 2, hjust = 0.90) + 
+  labs(title="Correlation among variables", fill="Correlation") + 
+  coord_cartesian(expand=T)
 
 #unique(sATM$message_code)
 #summary(sATM$message_code)
@@ -293,7 +334,7 @@ sATM[,vars] %>%
        ylab=c("Missing data","Pattern"))
 ```
 
-### Principle Component Analisys (PCA)
+### PCA
 
 ```{r fig.height=3, fig.width=10}
 #sATM <- sATM %>% select(-weather_lat, -weather_lon)
@@ -327,11 +368,11 @@ loadings <- pca$rotation %>%
   rownames_to_column("name")
 
 loadings[,-1] <- apply(loadings[,-1], MARGIN = 2, FUN = round, digits=2)
-
-a <- loadings %>% dplyr::select(name, PC1) %>% arrange(desc(PC1))
-b <- loadings %>% dplyr::select(name, PC2) %>% arrange(desc(PC2))
-c <- loadings %>% dplyr::select(name, PC3) %>% arrange(desc(PC3))
-d <- loadings %>% dplyr::select(name, PC4) %>% arrange(desc(PC4))
+head
+a <- loadings %>% dplyr::select(name, PC1) %>% arrange(desc(PC1)) %>% head(6)
+b <- loadings %>% dplyr::select(name, PC2) %>% arrange(desc(PC2)) %>% head(6)
+c <- loadings %>% dplyr::select(name, PC3) %>% arrange(desc(PC3)) %>% head(6)
+d <- loadings %>% dplyr::select(name, PC4) %>% arrange(desc(PC4)) %>% head(6)
 
 kable(cbind(a,b,c,d)) %>% kable_styling("condensed")
 
@@ -368,7 +409,7 @@ kable(cbind(a,b,c,d)) %>% kable_styling("condensed")
 
 
 
-
+### Kmeans
 
 ```{r fig.height=3, fig.width=10}
 #km %>% 
@@ -403,11 +444,11 @@ ggplot(scree, aes(N, wss)) +
 ```
 
 
-
+# Combination
 
 We plot the 
 
-```{r fig.height=4, fig.width=10}
+```{r PCA CLUSTER, fig.height=4, fig.width=10}
 set.seed(250920198)
 
 km <- sATM[,vars2] %>% 
@@ -444,7 +485,7 @@ df %>%
 sATM %>%
   bind_cols(cluster = km$cluster) %>%
   select(vars2, cluster) %>%
-  select(-atm_street_number, -atm_zipcode, -weather_city_id) %>% 
+  select(-atm_street_number, -atm_zipcode, -weather_city_id, -weather_id, -atm_id) %>% 
   group_by(cluster) %>%
   mutate(n = n()) %>%
   summarise_all(funs(mean)) %>%
@@ -463,6 +504,8 @@ sATM %>%
 
 
 ## Supervised Models
+We're fitting 6 different models to the data. One big challenge is that we have alot of observations, 2.5m, and that
+
 
 ```{r}
 cv <- trainControl(method = "cv", number = 5)
@@ -474,6 +517,9 @@ index    <- createDataPartition(ml$Euro, p = 0.03, list = FALSE)
 training <- ml[index,] 
 test     <- ml[-index,] 
 ```
+
+
+### Normal sampeling
 
 ```{r MODELS, message=FALSE, warning=FALSE}
 
@@ -490,7 +536,7 @@ fit_tre <- train(Euro ~ .,
                  trControl = cv, 
                  metric    = "Kappa",
                  method    = "rpart", 
-                 tuneGrid  = expand.grid(cp = c(0.001, 0.005 ,0.01, 0.02, 0.04)))
+                 tuneGrid  = expand.grid(cp = c(0.001, 0.005)))
 c <- Sys.time()
 
 fit_bag <- train(Euro ~ ., 
@@ -502,14 +548,14 @@ fit_bag <- train(Euro ~ .,
 d <- Sys.time()
 
 fit_raf <- train(Euro ~ ., 
-                 data      = sample_n(training, 1000),
+                 data      = sample_n(training, 500),
                  trControl = cv,
                  tuneGrid  = expand.grid(.mtry = (1:7)),
                  method    = 'rf',
                  metric    = 'Accuracy')
 e <- Sys.time()
 fit_svm <- train(Euro ~ ., 
-                 data      = sample_n(training, 2000),
+                 data      = sample_n(training, 500),
                  trControl = cv,
                  tuneGrid  = expand.grid(C = 10^seq(1, -1, by = -0.02)),
                  method    = 'svmLinear',
@@ -518,13 +564,13 @@ f<- Sys.time()
 ```
 
 
-```{r}
-paste0("Logistic: ", b-a)
-paste0("Tree: ",     c-b)
-paste0("Bagged: ",   d-c)
-paste0("RF: ",       e-d)
-paste0("SVM: ",      f-e)
-paste0("Total: ",    f-a)
+```{r TIME}
+cat(paste0("Logistic: ", round(difftime(b,a, units = "mins"),2),"\n",
+           "Tree:     ", round(difftime(c,b, units = "mins"),2),"\n",
+           "Bagged:   ", round(difftime(d,c, units = "mins"),2),"\n",
+           "RF:       ", round(difftime(e,d, units = "mins"),2),"\n",
+           "SVM:      ", round(difftime(f,e, units = "mins"),2),"\n",
+           "Total:    ", round(difftime(f,a, units = "mins"),2),"\n"))
 
 ```
 
@@ -532,25 +578,23 @@ paste0("Total: ",    f-a)
 
 ```{r CONF}
 conf_bag <- table(predict(fit_bag,  test), test$Euro)
-conf_bag
+#conf_bag
 
 conf_tre <- table(predict(fit_tre,  test), test$Euro)
-conf_tre
+#conf_tre
 
 conf_log <- table(predict(fit_log,  test), test$Euro)
-conf_log
+#conf_log
 
 conf_raf <- table(predict(fit_raf,  test), test$Euro)
-conf_raf
+#conf_raf
 
 conf_svm <- table(predict(fit_svm,  test), test$Euro)
-conf_svm
+#conf_svm
 
 random   <- rbinom(n = length(test$Euro), size = 1, prob = mean(training$Euro == "Yes"))
 conf_ran <- table(as.factor(if_else(random == 1, "Yes", "No")), test$Euro)
-conf_ran
-
-
+#conf_ran
 ```
 
 
@@ -600,6 +644,7 @@ ggplot(df, aes(.metric, .estimate, fill = reorder(model, desc(.estimate)))) +
 
 
 
+### Down Sampeling
 
 
 
@@ -609,8 +654,25 @@ ggplot(df, aes(.metric, .estimate, fill = reorder(model, desc(.estimate)))) +
 
 
 
-
-
+```{r}
+#cv <- trainControl(method = "cv", number = 5, sampling = "down")
+#
+#ml <- fdata
+#ml$Euro <- as.factor(ifelse(ml$Euro == "TRUE", "Yes", "No"))
+#
+#index    <- createDataPartition(ml$Euro, p = 0.10, list = FALSE)
+#training <- ml[index,] 
+#test     <- ml[-index,] 
+#
+#a <- Sys.time()
+#fit_log <- train(Euro ~ .,
+#                 data      = training,
+#                 trControl = cv, 
+#                 method    = "glm", 
+#                 family    = "binomial",
+#                 metric    = 'Accuracy')
+#b <- Sys.time()
+```
 
 
 
