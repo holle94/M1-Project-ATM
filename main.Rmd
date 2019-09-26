@@ -13,7 +13,7 @@ output:
 # SparNord ATM transactions
 In this project we would work around the following problem statement. To solve the statement we will use the ML-techniques which the course so far have presented for us.
 
->>Predict whether the transaction in the Spar Nord ATMs is a euro transaction or not. 
+>Predict whether the transaction in the Spar Nord ATMs is a euro transaction or not. 
 
 In order to answer our problem statement, we’ve obtained a data set published by Spar Nord A/S. The data set contains data of all cash withdrawals made at their ATMs in Denmark in 2017. Based on the data set, we then want to set up a model which can 'predict' whether the transaction in the ATMs is in euros or not.
 
@@ -53,6 +53,7 @@ base <- "#1f83b4"
 
 load(file="generated_data/sATM.Rdata")
 load(file="generated_data/bATM.Rdata")
+load(file="generated_data/fdata.Rdata")
 
 set.seed(20092019)
 ```
@@ -82,7 +83,7 @@ p1 <- ggmap(map9) +
   geom_point(data = s, aes(lon,lat, size=n/1000), alpha = 0.8) + 
   scale_size(range = c(0.5, 8)) +
   labs(title="SparNord ATM transactions in 2017", 
-       subtitle = "size equals number of transactions", size="N in 1000s")
+       subtitle = "Size equals number of transactions in thousands", size="N")
 
 p2 <- ggmap(map9) +
   stat_density_2d(data = s, aes(lon,lat, fill = ..level..), geom = "polygon", alpha = .4) +
@@ -93,6 +94,14 @@ p2 <- ggmap(map9) +
 
 grid.arrange(p1,p2, nrow=1)
 ```
+
+Quick summary of transactions by region
+
+```{r}
+fdata %>% group_by(Region) %>% summarise(N=n()) %>% t() %>% kable() %>% kable_styling("condensed")
+```
+
+
 
 In this first visualisation we see that the activity is based heavily around Nordjylland, which is not surprising if you know the bank. We also see that there is a substantial difference in the number of transactions at each machine.
 
@@ -194,7 +203,7 @@ sATM$Customer <- str_detect(sATM$card_type, pattern = "on-us")
 #Cardtype
 sATM$Card <- sapply(strsplit(sATM$card_type, split = ' - on-us', fixed = TRUE), function(x) (x[1]))
 sATM$Card <- str_to_lower(sATM$Card)
-sATM$Card <- capitalize(sATM$Card)
+sATM$Card <- Hmisc::capitalize(sATM$Card)
 sATM$Card <- as.factor(sATM$Card)
 
 #Region
@@ -204,12 +213,14 @@ loc <- sATM %>% group_by(atm_id) %>%
 reg <- NA
 for (i in 1:nrow(loc)) {
   aa <- read_csv(paste0("http://dawa.aws.dk/kommuner/reverse?x=",loc$x[i] ,"&y=",loc$y[i]))
-  reg[i] <- as.character(aa[10,])
+  reg[i] <- as.character(aa[23,])
 }
+
 loc$Region <- reg
 
 sATM <- merge(sATM,loc[,c(1,4)],by ="atm_id")
 sATM$Region <- sapply(strsplit(sATM$Region, split='": "', fixed=TRUE), function(x) (x[2]))
+sATM$Region <- sapply(strsplit(sATM$Region, split='"', fixed=TRUE), function(x) (x[1]))
 sATM$Region <- as.factor(sATM$Region)
 
 sATM$Id       <- as.factor(sATM$atm_id)
@@ -223,39 +234,39 @@ sATM$Payout   <- as.factor(sATM$Payout)
 fsATM <- sATM %>% select(Id, Holliday, Airportdist, Time, 
                          Euro, Customer, Card, Weekend, Payout, Region)
 
-save(fsATM, file = "generated_data/fsATM.Rdata")
+#save(fsATM, file = "generated_data/fsATM.Rdata")
 ```
 
 
 
 The first step is to prepare the raw data for our analysis. The raw dataset doesn't need to be cleaned, because it's pretty complete for our purpose. Based on the problem statement we want the algorithm to predict Euro or not Euro transaction from the following parameters:
 
-- Holliday
+- **Holliday:**
   This parameter contains information about the specific day, is it a "normal" day or a day in the vacation, the parameter are therefore logical.     It's contructed on day and month from the raw dataset. Information about vacation are taken from: http://skoleferie-dk.dk/skoleferie-nordjylland/.   We argue that the purpose for Euro are bigger in the vacation then else, which should provide usefull information to the algorithm.
   
-- Airport distance
+- **Airport distance:**
   This parameter contains information about the distance to the closest airport, the parameter are therefore numerical. It's contructed on the        longitude and laditude on each ATM from the raw dataset and the included airports. The included airports are Aalborg, Billund and Copenhagen. The   hypotese is that, when flying your destination are likely an Euro-country, which means that ATM closest to an airport would be used to get euro.
   
-- Time
+- **Time:**
   This parameter contains information about the time of the day, which are grouped into 4: morning (04-09), midday (10-15), evening (16-21) and       night (22-03), the parameter are therefore a character. It's contructed on hour from the raw dataset. This parameter should help the algorithm,     beacuse it's most likely that an euro-transaction is conducted beteewn 10-15. The reason behind is that in Denmark we use DKK, which means these    transactions are more likely to happen anytime and spontaneously, where euro-transaction is believed to be prepared and with a purpose.
 
-- Weekday
+- **Weekday:**
   This parameter contains information about day, which are grouped into 2: weekday and weekend, the parameter are therefore a character. It's         contructed on day from the raw dataset. This parameter should help the algorithm to be more precise combined with the other parameters. There are   no specific reason behind.
   
-- Payout
+- **Payout:**
   This parameter contains information about the time you get payed (salary, transfer payments etc.), which typical happen beteewn the 27th and 31th   of each month and in relation to this you would withdraw our money beteewn the 1st and 4th. The parameter are therefore logical and contructed on   day and month from the raw dataset. The probability of a DKK-transaction is therefore believed to be very high in this date period.
 
-- Customer
+- **Customer:**
   This parameter contains information about the person behind the transaction, since it's data form SparNord, we can tell if the person is a          customer or not. The parameter are therefore a logical and contructed on card_type with the text "on-us" from the raw dataset. We argue an          euro-transaction are higher among customers of the bank since there are fees on these transactions for the non-customers.
   
-- Region
+- **Region:**
   This parameter contains information about the region, which are grouped into 4: Region Nordjylland, Region Midtjylland, Region Syddanmark, Region   Sj?lland and Region Hovedstaden. The parameter are therefore a character. It's contructed on the longitude and laditude from the raw dataset and    the specific longitude and laditudes belonging to each region. Since it's SparNord data most of the transactions are believed to be conducted in    Region Nordjylland, where the use of euro is modestly.
   
-- ATM ID
+- **ATM ID:**
   This parameter contains information about each specific ATM there are in the dataset which is 113. The parameter are therefore 
   categorically. It's contructed on atm_id from the raw dataset. We are not sure all of the ATMs have the option to withdraw euro, and therefore we   make this parameter to remove the doubt.
   
-- Cardtype
+- **Cardtype:**
   This parameter contains information about each cardtype used in the ATMs, which are grouped into 9 categories and the parameter are therefore a     character. It's contructed on card_type from the raw dataset. We believe some of the cardtypes are more used to withdraw euro then others.
   
 This can be presented as:
@@ -440,7 +451,7 @@ ggplot(scree, aes(N, wss)) +
 ```
 
 
-# Combination
+### Combination
 
 We plot the 
 
@@ -501,6 +512,7 @@ sATM %>%
 
 ## Supervised Models
 We're fitting 6 different models to the data. In this we face som challenges 
+
 - Size of the data: A big challenge is that we have alot of observations, 2.5m, and that is way too much to run on our computers for some models, especially if we want to do any kind of parametertuning. 
 - Grouped data: Another challenge is that the data is grouped, this means that some algorrithms, like LDA, have problems seperating the classes.
 - Signal to noise ratio: The data has few Eurotransactions, and on top of that there are no initutive good variables to seperate whether people get Euro or DKK from the ATM, as we see it the most promising is wheter the transaction is in a holiday period or not
@@ -632,7 +644,7 @@ conf_ran <- table(as.factor(if_else(random == 1, "Yes", "No")), test$Euro)
 
 ```{r}
 kable(cbind(conf_bag, conf_tre, conf_log, conf_ela, conf_raf, conf_svm, conf_ran)) %>% 
-  kable_styling("bordered", "condensed") %>%
+  kable_styling("bordered", "condensed", font_size = 10) %>%
   column_spec(1, bold = T, color="black") %>%
   add_header_above(c(" "                             = 1, 
                      "Bagged\nTree"                  = 2, 
@@ -664,8 +676,6 @@ log$model <- "Logistic Regression"
 ela$model <- "Elastic Net Regression"
 ran$model <- "Random Assignment"
 svm$model <- "Support Vector Machines"
-
-#df <- rbind(log, lok, ran, net, raf, svm)
 
 df <- rbind(ran, log,ela, tre, bag, svm, raf)
 
@@ -710,7 +720,8 @@ This however excludes a lot of information from the majority class in the datase
 
 
 
-
+## Conclusion
+This is a really good model
 
 
 
