@@ -20,7 +20,7 @@ Predictive moddeling of EURO vs. Non-EURO transactions
 ```
 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(ggforce)
 library(caret)
@@ -41,6 +41,7 @@ library(FactoMineR)
 library(geosphere)
 library(sf)
 
+base <- "#1f83b4"
 
 load(file="generated_data/sATM.Rdata")
 load(file="generated_data/bATM.Rdata")
@@ -51,7 +52,7 @@ set.seed(20092019)
 
 ## Data
 
-```{r fig.height=6, fig.width=10}
+```{r fig.height=6, fig.width=11, message=FALSE, warning=FALSE}
 coord <- as.matrix(data.frame(min = c(8, 55), 
                               max = c(13, 58), 
                               row.names = c("x","y")))
@@ -69,14 +70,15 @@ s <- bATM %>% filter(atm_lat > coord[2,1] & atm_lat < coord[2,2] &
 map9  <- get_stamenmap(coord, zoom = 9,  maptype = "toner-lite", force = TRUE)
 
 p1 <- ggmap(map9) +
-  geom_point(data = s, aes(lon,lat, size=n), alpha = 0.8) + 
+  geom_point(data = s, aes(lon,lat, size=n/1000), alpha = 0.8) + 
   scale_size(range = c(0.5, 8)) +
   labs(title="SparNord ATM transactions in 2017", 
-       subtitle = "size equals number of transactions")
+       subtitle = "size equals number of transactions", size="N in 1000s")
 
 p2 <- ggmap(map9) +
-  stat_density_2d(data = s, aes(lon,lat, fill = stat(level)), geom = "polygon", alpha = .3) +
-  scale_fill_viridis_c(option = "magma") +
+  stat_density_2d(data = s, aes(lon,lat, fill = ..level..), geom = "polygon", alpha = .4) +
+  #scale_fill_viridis_c(option = "magma") +
+  scale_fill_gradient2(midpoint=0.5,low = "black", mid = base, high = "white") +
   labs(title="SparNord ATM transactions in 2017", 
        subtitle = "Density of ATM placement")
 
@@ -86,18 +88,32 @@ grid.arrange(p1,p2, nrow=1)
 
 
 ```{r fig.height=3, fig.width=10}
-s1 <- bATM %>% group_by(month)   %>% summarize(n=n()/1000) %>% ggplot(aes(month,n))   + geom_col()     + labs(title = "obs by month")+ theme(axis.text.x = element_text(angle = 90, vjust=-0.1))
-s2 <- bATM %>% group_by(day)     %>% summarize(n=n()/1000) %>% ggplot(aes(day,n))     + geom_col()         + labs(title = "obs by day")
-s3 <- bATM %>% group_by(weekday) %>% summarize(n=n()/1000) %>% ggplot(aes(weekday,n)) + geom_col() + labs(title = "obs by weekday")+ theme(axis.text.x = element_text(angle = 90, vjust=-0.1))
-s4 <- bATM %>% group_by(hour)    %>% summarize(n=n()/1000) %>% ggplot(aes(hour,n))    + geom_col()       + labs(title = "obs by hour") + scale_x_continuous(breaks=c(0,2,4,6,8,10,12,14,16,18,20,22,24))
+s1 <- bATM %>% group_by(month) %>% summarize(n=n()/1000) %>% 
+  ggplot(aes(month,n))   + geom_col(fill=base, width=0.8)     + 
+  labs(title = "By month") + 
+  theme(axis.text.x = element_text(angle = 90, vjust=-0.1))
 
-grid.arrange(s1,s2,s3,s4, nrow=1)
+s2 <- bATM %>% group_by(day) %>% summarize(n=n()/1000) %>% 
+  ggplot(aes(day,n)) + geom_col(fill=base, color=base)         + 
+  labs(title = "By day")
+
+s3 <- bATM %>% group_by(weekday) %>% summarize(n=n()/1000) %>% 
+  ggplot(aes(weekday,n)) + geom_col(fill=base, width=0.8) + 
+  labs(title = "By weekday") + 
+  theme(axis.text.x = element_text(angle = 90, vjust=-0.1))
+
+s4 <- bATM %>% group_by(hour) %>% summarize(n=n()/1000) %>% 
+  ggplot(aes(hour,n))    + geom_col(fill=base, color=base)       + 
+  labs(title = "By hour") + 
+  scale_x_continuous(breaks=c(0,3,6,9,12,15,18,21,24))
+
+grid.arrange(s1,s3,s2,s4, nrow=1)
 ```
 
 
 ```{r fig.height=3, fig.width=10}
 bATM$Euro <- as.factor(ifelse(bATM$currency=="DKK", FALSE, TRUE))
-s5 <- bATM %>% filter(Euro == T) %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col()
+s5 <- bATM %>% filter(Euro == T) %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col(fill=base)
 
 grid.arrange(s5)
 
@@ -229,15 +245,17 @@ summary(tab)
 
 
 
-```{r fig.height=3, fig.width=10}
+```{r fig.height=2, fig.width=10}
 table(fbATM$Euro, fbATM$Id) %>% 
   prop.table(margin=2) %>% 
   as.data.frame %>% 
   filter(Var1==T) %>% 
   ggplot(aes(reorder(Var2, Freq), Freq)) + 
-  geom_col() + 
+  geom_col(fill=base, color=base) + 
   labs(x="ATM id", legend="Euro", title="Percentage of EURO transactions by each ATM machine", 
-       subtitle="") + theme(axis.text.x=element_text(size=4))
+       subtitle="Machine 99 has almost 50% Euro transactions, but it's an internal ATM") + 
+  theme(axis.text.x=element_text(size=4))
+
 ```
 
 
@@ -255,21 +273,24 @@ vars <- c("day","hour","atm_id","atm_street_number","atm_zipcode","atm_lat",
 
 ```
 
-```{r fig.height=6, fig.width=10}
+```{r fig.height=5, fig.width=10}
 ggcorr(sATM[vars], label = TRUE, label_size = 2, label_round = 2, hjust = 0.90) + 
-  labs(title="Correlation among variables", legend="Correlation") + theme_grey() + coord_cartesian(expand=T)
+  labs(title="Correlation among variables", legend="Correlation") + coord_cartesian(expand=T)
 
-unique(sATM$message_code)
-summary(sATM$message_code)
+#unique(sATM$message_code)
+#summary(sATM$message_code)
 
+```
+
+```{r fig.height=3, fig.width=10}
 sATM[,vars] %>% 
-  aggr(col = c('navyblue','red'), 
+  aggr(col = c('white',base), 
        numbers = TRUE, 
        sortVars = TRUE, 
        labels = names(sATM[,vars]), 
        cex.axis = 0.5, 
        gap = 0.5, 
-       ylab=c("Histogram of missing data","Pattern"))
+       ylab=c("Missing data","Pattern"))
 ```
 
 ### Principle Component Analisys (PCA)
@@ -292,10 +313,10 @@ df2 <- a$importance[3,] %>% as_tibble %>% gather(variable, value) %>% mutate(typ
 
 rbind(df1,df2) %>% as_tibble %>% 
   ggplot(aes(N, value)) + 
-  geom_line(size=1.5, color="#4f6980") + 
-  geom_point(size=3, shape=21, fill="white", color="#4f6980", stroke=2) + 
-  facet_wrap(~type) + scale_x_continuous(breaks=c(0:15)) + 
-  labs(title="PCA")
+  geom_line(size=1.5, color=base) + 
+  geom_point(size=3, shape=21, fill="white", color=base, stroke=2) + 
+  facet_wrap(~type, scale="free") + scale_x_continuous(breaks=c(0:15)) + 
+  labs(title="Screeplot: Number of factors in PCA", x="Number of factors")
 
 
 
@@ -312,7 +333,7 @@ b <- loadings %>% dplyr::select(name, PC2) %>% arrange(desc(PC2))
 c <- loadings %>% dplyr::select(name, PC3) %>% arrange(desc(PC3))
 d <- loadings %>% dplyr::select(name, PC4) %>% arrange(desc(PC4))
 
-kable(cbind(a,b,c,d)) %>% kable_styling()
+kable(cbind(a,b,c,d)) %>% kable_styling("condensed")
 
 
 #pca1 <- sATM[,vars2] %>%
@@ -325,17 +346,6 @@ kable(cbind(a,b,c,d)) %>% kable_styling()
 
 ```
 
-
-```{r}
-sATM[,vars2] %>% 
-  aggr(col = c('navyblue','red'), 
-       numbers = TRUE, 
-       sortVars = TRUE, 
-       labels = names(sATM[,vars]), 
-       cex.axis = 0.5, 
-       gap = 0.5, 
-       ylab=c("Histogram of missing data","Pattern"))
-```
 
 ```{r}
 #pca2 %>% 
@@ -360,7 +370,7 @@ sATM[,vars2] %>%
 
 
 
-```{r}
+```{r fig.height=3, fig.width=10}
 #km %>% 
 #  fviz_cluster(data = sATM[,vars2],
 #               ggtheme = theme_gray()) 
@@ -373,21 +383,13 @@ for (i in 1:15) {
 scree <- tibble(wss, N=1:15)
 
 ggplot(scree, aes(N, wss)) + 
-  geom_line(size=1.5, color="#4f6980") + 
-  geom_point(size=3, shape=21, fill="white", color="#4f6980", stroke=2) + 
+  geom_line(size=1.5, color=base) + 
+  geom_point(size=3, shape=21, fill="white", color=base, stroke=2) + 
   scale_x_continuous(breaks=c(1:15)) + 
-  labs(title="Scree plot of number of clusters", x="Number of clusters", y="WSS")
+  labs(title="Screeplot: Number of clusters", x="Number of clusters", y="WSS")
 ```
 
-```{r}
-sATM %>%
-  bind_cols(cluster = km$cluster) %>%
-  select(vars2, cluster) %>%
-  group_by(cluster) %>%
-  mutate(n = n()) %>%
-  summarise_all(funs(mean)) %>% 
-  kable
-```
+
 
 
 ```{r}
@@ -405,7 +407,9 @@ sATM %>%
 
 We plot the 
 
-```{r fig.height=6, fig.width=10}
+```{r fig.height=4, fig.width=10}
+set.seed(250920198)
+
 km <- sATM[,vars2] %>% 
   scale() %>% 
   kmeans(centers = 4, nstart = 20) 
@@ -419,7 +423,7 @@ points <- (km$centers) %*% (eigen) %>%
   mutate(N=c("PC1", "PC2", "PC3", "PC4")) %>% 
   gather(variable, value,-N) %>% 
   spread(key = N, value = value) %>% 
-  mutate(variable2=c(2,1,4,3))
+  mutate(variable2=c(2,1,3,4))
 
 df %>% 
   ggplot(aes(PC1,PC2)) + 
@@ -436,7 +440,18 @@ df %>%
 
 
 
-
+```{r}
+sATM %>%
+  bind_cols(cluster = km$cluster) %>%
+  select(vars2, cluster) %>%
+  select(-atm_street_number, -atm_zipcode, -weather_city_id) %>% 
+  group_by(cluster) %>%
+  mutate(n = n()) %>%
+  summarise_all(funs(mean)) %>%
+  mutate_all(funs(round(.,2))) %>% 
+  kable %>% 
+  kable_styling("condensed")
+```
 
 
 
@@ -460,7 +475,7 @@ training <- ml[index,]
 test     <- ml[-index,] 
 ```
 
-```{r}
+```{r MODELS, message=FALSE, warning=FALSE}
 
 a <- Sys.time()
 fit_log <- train(Euro ~ .,
@@ -469,45 +484,53 @@ fit_log <- train(Euro ~ .,
                  method    = "glm", 
                  family    = "binomial",
                  metric    = 'Accuracy')
-
+b <- Sys.time()
 fit_tre <- train(Euro ~ .,
                  data      = training, 
                  trControl = cv, 
                  metric    = "Kappa",
                  method    = "rpart", 
                  tuneGrid  = expand.grid(cp = c(0.001, 0.005 ,0.01, 0.02, 0.04)))
-
+c <- Sys.time()
 
 fit_bag <- train(Euro ~ ., 
-                 data = training, 
-                 method = "treebag",
-                 nbagg = 50,
-                 metric = "ROC",
+                 data      = training, 
+                 method    = "treebag",
+                 nbagg     = 50,
+                 metric    = "ROC",
                  trControl = trainControl(method = "cv", number = 5, classProbs = T))
-
+d <- Sys.time()
 
 fit_raf <- train(Euro ~ ., 
-                 data      = sample_n(training,3000),
+                 data      = sample_n(training, 1000),
                  trControl = cv,
                  tuneGrid  = expand.grid(.mtry = (1:7)),
                  method    = 'rf',
                  metric    = 'Accuracy')
-
+e <- Sys.time()
 fit_svm <- train(Euro ~ ., 
-                 data      = sample_n(training,5000),
+                 data      = sample_n(training, 2000),
                  trControl = cv,
                  tuneGrid  = expand.grid(C = 10^seq(1, -1, by = -0.02)),
                  method    = 'svmLinear',
                  metric    = 'Accuracy')
+f<- Sys.time()
+```
 
-Sys.time() - a
+
+```{r}
+paste0("Logistic: ", b-a)
+paste0("Tree: ",     c-b)
+paste0("Bagged: ",   d-c)
+paste0("RF: ",       e-d)
+paste0("SVM: ",      f-e)
+paste0("Total: ",    f-a)
+
 ```
 
 
 
-
-
-```{r}
+```{r CONF}
 conf_bag <- table(predict(fit_bag,  test), test$Euro)
 conf_bag
 
@@ -526,35 +549,43 @@ conf_svm
 random   <- rbinom(n = length(test$Euro), size = 1, prob = mean(training$Euro == "Yes"))
 conf_ran <- table(as.factor(if_else(random == 1, "Yes", "No")), test$Euro)
 conf_ran
+
+
+```
+
+
+
+```{r}
+kable(cbind(conf_bag, conf_tre, conf_log, conf_raf, conf_svm, conf_ran)) %>% 
+  kable_styling("bordered", "condensed") %>%
+  column_spec(1, bold = T, color="black") %>%
+  add_header_above(c(" "                             = 1, 
+                     "Bagged\nTree"                  = 2, 
+                     "Classification\nTree"          = 2, 
+                     "Logistic\nRegression"          = 2, 
+                     "Random\nForrest"               = 2, 
+                     "Support Vector\nMachines"      = 2,
+                     "Random\nAssignment"            = 2))
 ```
 
 
 
 
 
-
-
-
-```{r}
+```{r fig.height=6, fig.width=10}
 bag <- rbind(spec(conf_bag), precision(conf_bag), accuracy(conf_bag), recall(conf_bag), npv(conf_bag))
 tre <- rbind(spec(conf_tre), precision(conf_tre), accuracy(conf_tre), recall(conf_tre), npv(conf_tre))
-#raf <- rbind(spec(conf_raf), precision(conf_raf), accuracy(conf_raf))
-#net <- rbind(spec(conf_net), precision(conf_net), accuracy(conf_net), recall(conf_net), npv(conf_net))
 raf <- rbind(spec(conf_raf), precision(conf_raf), accuracy(conf_raf), recall(conf_raf), npv(conf_raf))
 log <- rbind(spec(conf_log), precision(conf_log), accuracy(conf_log), recall(conf_log), npv(conf_log))
-#lok <- rbind(spec(conf_lok), precision(conf_lok), accuracy(conf_lok), recall(conf_lok), npv(conf_lok))
 ran <- rbind(spec(conf_ran), precision(conf_ran), accuracy(conf_ran), recall(conf_ran), npv(conf_ran))
 svm <- rbind(spec(conf_svm), precision(conf_svm), accuracy(conf_svm), recall(conf_svm), npv(conf_svm))
 
 bag$model <- "Bagged Tree"
 tre$model <- "Classification Tree"
-#raf$model <- "Random Forrest"
-#net$model <- "Elastic Net Regression"
 raf$model <- "Random Forrest"
 log$model <- "Logistic Regression"
-#lok$model <- "Logistic Regression - glmnet"
 ran$model <- "Random Assignment"
-svm$model <- "Support Vector Machine Model"
+svm$model <- "Support Vector Machines"
 
 #df <- rbind(log, lok, ran, net, raf, svm)
 
