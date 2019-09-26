@@ -47,7 +47,7 @@ library(GGally)
 library(FactoMineR)
 library(geosphere)
 library(sf)
-library(Hmisc)
+#library(Hmisc)
 
 base <- "#1f83b4"
 
