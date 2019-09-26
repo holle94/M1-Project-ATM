@@ -50,6 +50,7 @@ library(sf)
 #library(Hmisc)
 
 base <- "#1f83b4"
+base2 <- "#12a2a8"
 
 load(file="generated_data/sATM.Rdata")
 load(file="generated_data/bATM.Rdata")
@@ -107,7 +108,7 @@ In this first visualisation we see that the activity is based heavily around Nor
 
 Well, lets see how the transactions are distributed in time:
 
-```{r fig.height=3, fig.width=10}
+```{r fig.height=6, fig.width=10}
 s1 <- bATM %>% group_by(month) %>% summarize(n=n()/1000) %>% 
   ggplot(aes(month,n))   + geom_col(fill=base, width=0.8)     + 
   labs(title = "By month") + 
@@ -127,22 +128,35 @@ s4 <- bATM %>% group_by(hour) %>% summarize(n=n()/1000) %>%
   labs(title = "By hour") + 
   scale_x_continuous(breaks=c(0,3,6,9,12,15,18,21,24))
 
-grid.arrange(s1,s3,s2,s4, nrow=1)
+
+
+#Ovenstående plots illustrerer fordelingen af alle transaktioner på hhv. de forskellige måneder, ugedage, dage på måneden og timer.
+
+#The first 4 plots shows the amount of withdraws destributed on weekday, month, day and hour. We can see a pattern in the plots, where there is about 20.000 withdraws each month, except from the summer months 'May','June' and'July' where there is about 25.000 withdraws. This could be explained by the fact that people are more likely to take on vacation in these months. Further it can be seen that people are more likely to make a withdraw in the beginning of the month, where we can see that amount of withdraws is highest on the 1st of the month, and right before the weekend, where friday is the day with the highest amount of withdraws. 
+
+s5 <- bATM %>% filter(currency == "EUR") %>% group_by(weekday) %>% summarize(n=n()/1000) %>% ggplot(aes(weekday,n)) + geom_col(fill=base2, width=0.8)  + labs(title="By weekday - Euro")+ 
+  theme(axis.text.x = element_text(angle = 90, vjust=-0.1))
+s6 <- bATM %>% filter(currency == "EUR") %>% group_by(month) %>% summarize(n=n()/1000) %>% ggplot(aes(month,n)) + geom_col(fill=base2, width=0.8)  + labs(title="By month - Euro")+ 
+  theme(axis.text.x = element_text(angle = 90, vjust=-0.1))
+s7 <- bATM %>% filter(currency == "EUR") %>% group_by(day) %>% summarize(n=n()/1000) %>% ggplot(aes(day,n)) + geom_col(color = base2, fill = base2) + 
+labs(title="By day - Euro")
+s8 <- bATM %>% filter(currency == "EUR") %>% group_by(hour) %>% summarize(n=n()/1000) %>% ggplot(aes(hour,n)) + geom_col(color = base2, fill = base2) + labs(title="By hour - Euro") + 
+  scale_x_continuous(breaks=c(0,3,6,9,12,15,18,21,24))
+
+#The plots shows the amount of the euro-transactions destributed on weekday, month, day and hour. We can see from the euro-month plot that people are more likely to withdraw euros in the summermonth July. This may be due to more people are going on vacations in the holiday-months like july. And like the case before we can see that people is slightly more likely to withdraw euros in the days leading up to the weekend and in the beginning of the months.
+
+grid.arrange(s1,s3,s2,s4,s6,s5,s7,s8, nrow=2)
 ```
 
 
-```{r fig.height=3, fig.width=10}
-bATM$Euro <- as.factor(ifelse(bATM$currency=="DKK", FALSE, TRUE))
-s5 <- bATM %>% filter(Euro == T) %>% group_by(month) %>% summarize(n=n()) %>% ggplot(aes(month,n)) + geom_col(fill=base)
+```{r fig.height=5, fig.width=10}
 
-grid.arrange(s5)
+bATM %>% filter(currency =="EUR") %>% group_by(day, month) %>% summarize(n=n()) %>% ggplot(aes(day, n)) + geom_col(fill=base, color=base) + facet_wrap(~month)  + labs(title="The number of Euro withdrawals on each date.")
 
-#fATM %>% 
-#  group_by(atm_id) %>% 
-#  summarize(n=n(), area = first(weather_city_name)) %>% 
-#  ggplot(aes(reorder(atm_id,n), n, fill=as.factor(area))) + 
-#  geom_col()
+#The plots shows the amount of euro-withdraws on the specific day in the month. As can be seen from the plot the amount of euro-withdraws increases from the end of june to the end of july Which can be explained by the fact that people are going on vacation and the currency in that country is euro. It seems like people are more likely to withdraw euro in the holiday period. 
+
 ```
+
 
 
 
@@ -272,6 +286,74 @@ The first step is to prepare the raw data for our analysis. The raw dataset does
 This can be presented as:
 
 $$Euro = Holliday + Airport + Time + Weekday + Payout + Customer + Region + ATM.ID + Cardtype$$
+
+### Plots of features
+
+These plots illustrates the relationship between euro and the distance to the nearest airport. The first one shows a Histogram of the amount of withdraws per  ATM w. distance the ATMs nearest airport, where the second shows the same but only with euro-withdraws. You could emagine that people who are going on vacation would use the ATMs close to the airport when they need euros. As you can see from the last plot, which plots the density of Airportdistance and euro, nearly 20% of the euro-transactions is made in the ATM which is closest to the airport, and after that there seems to be a downward trend in the density. 
+
+```{r fig.height=5, fig.width=10}
+#fdata
+
+a3 <- ggplot(fdata, aes(x=fdata$Airportdist)) + geom_histogram(binwidth=3, col = base, fill = base) + labs(title="Withdraws avg. distance to airport")
+a4 <- ggplot(fdata, aes(x=fdata$Airportdist, stat(density))) + geom_histogram(binwidth=3, col = base, fill = base) + 
+  facet_wrap(~Euro, nrow=2) + labs(title="Withdraws avg. distance to airport by currency")
+
+#
+
+grid.arrange(a3,a4, nrow=1)
+```
+
+It seems like Region Sjælland and Region Midtjylland are more likely to withdraw euro than the rest of Denmark. 3.27% of the transactions in Region Sjælland are euro-withdraw and 2.99% in Region Midtjylland. The numbers for Region Syddanmark, Hovedstaden and Nordjylland is 2.13%, 1.55% and 1.43%. This could for example be explained by the fact that there are some bigger airports in Region Midtjylland and Region Sjælland, with more flights and some other destination than for example Aalborg airport.
+
+```{r fig.height=4, fig.width=10}
+#Euro/Region
+fdata %>% group_by(Region, Euro) %>% summarize(n=n()) %>% mutate(freq = n/sum(n)) %>% filter(Euro==T) %>% 
+  ggplot(aes(reorder(Region,freq),freq)) + geom_col(fill=base) + labs(title="The amount of Euro withdraws by each region", x="") + geom_text(aes(y=freq + 0.002,label=round(freq*100,2)))
+```
+
+- As we can see there is total 16.965 euro-withdraws in the Holiday, and 29.474 not-euro-withdraws and therefore an overweight of not-euro-withdraws in the holiday. The plot shows that 2.49% of the withdraws in the holiday is euro-withdraws, where 1.65% of the withdraws outside of the holiday is euro-withdraws. So it seems like people are more likely to do euro-withdraws in the holiday than outside the holiday. This can be explained by the fact that people want to have some euros in cash if they are going on a vacation in Europe.
+
+- The plot shows that 2.98% of the euro-withdraws are made by customers of the bank, while 0.4% are made by non-customers. 
+
+- The plot shows that 1.27% of the euro-withdraws are made in the 'Weekend', while 2.06% are made outside the weekend. It seems like people are more likely to made euro-withdraws in the weekdays than in the weekend.
+
+- The plot shows that 1.65% of the euro-withdraws are in the payout-period, while 1.99% of the euro-withdraws are in the not-payout-period. This indicates that there is no trend between the payout-period and the euro-withdraws.
+
+```{r fig.height=4, fig.width=10}
+a2 <- fdata %>% group_by(Holliday, Euro) %>% summarize(n=n()) %>% mutate(freq = n/sum(n)) %>% filter(Euro==T) %>% 
+  ggplot(aes(reorder(Holliday,freq),freq)) + geom_col(fill=base) + labs(title="Holiday", x="") + geom_text(aes(y=freq + 0.002,label=round(freq*100,2)))
+
+#Customer/Euro
+
+a5 <- fdata %>% group_by(Customer, Euro) %>% summarize(n=n()) %>% mutate(freq = n/sum(n)) %>% filter(Euro==T) %>% 
+  ggplot(aes(Customer,freq)) + geom_col(fill=base) + labs(title="Customer", x="") + geom_text(aes(y=freq + 0.002,label=round(freq*100,2)))
+#Weekend/Euro
+
+a6 <- fdata %>% group_by(Weekend, Euro) %>% summarize(n=n()) %>% mutate(freq = n/sum(n)) %>% filter(Euro==T) %>% 
+  ggplot(aes(Weekend,freq)) + geom_col(fill=base) + labs(title="Weekend", x="") + geom_text(aes(y=freq + 0.002,label=round(freq*100,2)))
+
+
+#Payout/Euro
+a7 <- fdata %>% group_by(Payout, Euro) %>% summarize(n=n()) %>% mutate(freq = n/sum(n)) %>% filter(Euro==T) %>% 
+  ggplot(aes(Payout,freq)) + geom_col(fill=base) + labs(title="Payout", x="") + geom_text(aes(y=freq + 0.002,label=round(freq*100,2)))
+
+grid.arrange(a2, a5,a6,a7, nrow=1)
+```
+
+
+
+The plot shows which cardtype that often has a euro-withdraw, as can be seen it's the 'Visa Dankort' which has the highest frequency of euro-withdraws. The plot shows that 3.15% of the withdraws in 'Visa Dankort' is euro-withdraws.
+
+```{r fig.height=4, fig.width=10}
+fdata %>% group_by(Card, Euro) %>% summarize(n=n()) %>% mutate(freq = n/sum(n)) %>% filter(Euro==T) %>% 
+  ggplot(aes(reorder(Card,freq),freq)) + 
+  geom_col(fill=base) + 
+  labs(title="Euro-withdraws as percent of all the trans", x="") + 
+  geom_text(aes(y=freq + 0.002,label=round(freq*100,2)))
+
+```
+
+Based on this review and plots of the new variables, we have the dataset for the supervised ML-part of the project. To summarize, the set includes 2.5 million observations across 10 variables, which is primarily factors. It’s only the variable Airport which is numerical, therefore we don’t find it relevant to scale this data.
 
 
 ### Control of Features
@@ -534,6 +616,7 @@ Facing the size challenge has meant that we decided to do the supervised models 
 6. Suport vector macines/classifier
   kernel: We use a linear kernel, but there are manny choices like polynomial 
 
+The crossvalidation is set 5-fold, and the data is split into test and training
 
 ```{r}
 cv <- trainControl(method = "cv", number = 5)
@@ -548,6 +631,7 @@ test     <- ml[-index,]
 
 
 ### Normal sampeling
+The 6 models are fit with `caret`
 
 ```{r MODELS, message=FALSE, warning=FALSE}
 
@@ -603,8 +687,12 @@ g<- Sys.time()
 ```
 
 
+Lets look at how long this took to run:
+
 ```{r TIME}
-cat(paste0("Logistic: ", round(difftime(b,a, units = "mins"),2),"\n",
+
+cat(paste0("Size of training set: ",nrow(training)," rows of 2.5m\n","\n",
+           "Logistic: ", round(difftime(b,a, units = "mins"),2),"\n",
            "Elastic:  ", round(difftime(c,b, units = "mins"),2),"\n",
            "Tree:     ", round(difftime(d,c, units = "mins"),2),"\n",
            "Bagged:   ", round(difftime(e,d, units = "mins"),2),"\n",
@@ -644,7 +732,7 @@ conf_ran <- table(as.factor(if_else(random == 1, "Yes", "No")), test$Euro)
 
 ```{r}
 kable(cbind(conf_bag, conf_tre, conf_log, conf_ela, conf_raf, conf_svm, conf_ran)) %>% 
-  kable_styling("bordered", "condensed", font_size = 10) %>%
+  kable_styling("bordered", "condensed", font_size = 11) %>%
   column_spec(1, bold = T, color="black") %>%
   add_header_above(c(" "                             = 1, 
                      "Bagged\nTree"                  = 2, 
